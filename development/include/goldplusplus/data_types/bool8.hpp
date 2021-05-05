@@ -22,6 +22,7 @@ namespace bool8 {
   void writebool(bool8_t&, const bool&);
 
 }}
+NS_END
 #undef NS_BEGIN
 #undef NS_END
 #endif //  __GOLDPLUSPLUS_DATA_TYPES_BOOL8_HPP__
