@@ -1,6 +1,9 @@
 # gold++ 
 A set of rich libraries in C++ which should require C++ 20 support. 
 
+## Note
+This project is undergoing construction...
+
 ## Goal
 * Utilizing modern C++ features and also retain its old functionality.
 * Having interpreter called `goldi++` for debugging purposes.
