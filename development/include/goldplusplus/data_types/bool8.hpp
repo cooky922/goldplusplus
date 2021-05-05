@@ -1,4 +1,4 @@
-// bool7.hpp
+// bool8.hpp
 #ifndef __GOLDPLUSPLUS_DATA_TYPES_BOOL8_HPP__
 #define __GOLDPLUSPLUS_DATA_TYPES_BOOL8_HPP__
 
