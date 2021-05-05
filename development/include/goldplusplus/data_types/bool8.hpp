@@ -1,4 +1,4 @@
-// bool8.hpp
+// bool8.hpp under gold++.data_types
 #ifndef __GOLDPLUSPLUS_DATA_TYPES_BOOL8_HPP__
 #define __GOLDPLUSPLUS_DATA_TYPES_BOOL8_HPP__
 
