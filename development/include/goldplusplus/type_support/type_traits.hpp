@@ -3,13 +3,13 @@
 #ifndef __GOLDPLUSPLUS_TYPE_SUPPORT_TYPE_TRAITS_HPP__
 #define __GOLDPLUSPLUS_TYPE_SUPPORT_TYPE_TRAITS_HPP__
 
-#define NS_BEGIN namespace gold {
-#define NS_END }
+#include <goldplusplus/_bits/config.hpp>
 
 NS_BEGIN
 inline namespace type_support {
 namespace type_traits {
-// gold::type_support::type_traits::remove_all_adj and gold::type_support::type_traits::remove_all_adj_t
+
+// [1] gold::type_support::type_traits::remove_all_adj and gold::type_support::type_traits::remove_all_adj_t
 template<typename T, typename U =
     std::remove_cvref_t<
     std::remove_pointer_t<
@@ -19,8 +19,8 @@ struct remove_all_adj : remove_all_adj<U> {};
 template<typename T> struct remove_all_adj<T, T> { using type = T; };
 template<typename T> using remove_all_adj_t = typename remove_all_adj<T>::type;
 
-// gold::type_support::type_traits::is_container and gold::type_support::type_traits::is_container_v
-// gold::type_support::type_traits::is_container_adaptor and gold::type_support::type_traits::is_container_adaptor_v
+// [2] gold::type_support::type_traits::is_container and gold::type_support::type_traits::is_container_v
+// [3] gold::type_support::type_traits::is_container_adaptor and gold::type_support::type_traits::is_container_adaptor_v
 
 template <typename T> struct is_container : std::false_type {};
 template <typename T> struct is_container_adaptor : std::false_type {};
@@ -80,7 +80,7 @@ struct is_container_adaptor<std::queue<T, Cont>> : std::true_type {};
 template <typename T, typename Cont, typename Compare>
 struct is_container_adaptor<std::priority_queue<T, Cont, Compare>> : std::true_type {};
 
-// gold::type_support::type_traits::is_string and gold::type_support::type_traits::is_string_v
+// [4] gold::type_support::type_traits::is_string and gold::type_support::type_traits::is_string_v
 // note: unfinished
 template <typename T> struct is_string : std::false_type {};
 template <typename T> struct is_string<T&> : is_string<T> {};
@@ -119,6 +119,14 @@ template <> struct is_string<std::wstring_view> : std::true_type {};
 template <> struct is_string<std::u8string_view> : std::true_type {};
 template <> struct is_string<std::u16string_view> : std::true_type {};
 template <> struct is_string<std::u32string_view> : std::true_type {};
+
+// [5] gold::type_support::type_traits::are_same and gold::type_support::type_traits::are_same_v 
+template <typename T, typename... Ts> struct are_same : std::bool_constant<(std::is_same_v<T, Ts> && ...)> {};
+template <typename T, typename... Ts> constexpr bool are_same_v = are_same<T, Ts...>::value;
+
+// [6] gold::type_support::type_traits::is_any and gold::type_support::type_traits::::is_any_v
+template <typename T, typename... Ts> struct is_any : std::bool_constant<(std::is_same_v<T, Ts> || ...)> {};
+template <typename T, typename... Ts> constexpr bool is_any_v = is_any<T, Ts...>::value;
 }}
 NS_END
 #undef NS_BEGIN
