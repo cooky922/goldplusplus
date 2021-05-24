@@ -3,8 +3,7 @@
 #ifndef __GOLDPLUSPLUS_TURTLES_TURTLE_HPP__
 #define __GOLDPLUSPLUS_TURTLES_TURTLE_HPP__
 
-#define NS_BEGIN namespace gold {
-#define NS_END }
+#include <goldplusplus/_bits/config.hpp>
 
 #include <cmath>
 #include <utilites>
