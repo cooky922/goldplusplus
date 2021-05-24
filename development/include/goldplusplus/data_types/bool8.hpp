@@ -2,8 +2,7 @@
 #ifndef __GOLDPLUSPLUS_DATA_TYPES_BOOL8_HPP__
 #define __GOLDPLUSPLUS_DATA_TYPES_BOOL8_HPP__
 
-#define NS_BEGIN namespace gold {
-#define NS_END }
+#include <goldplusplus/_bits/config.hpp>
 
 #include <cstdint>
 
