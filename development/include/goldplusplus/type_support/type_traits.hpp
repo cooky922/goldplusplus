@@ -127,6 +127,21 @@ template <typename T, typename... Ts> constexpr bool are_same_v = are_same<T, Ts
 // [6] gold::type_support::type_traits::is_any and gold::type_support::type_traits::::is_any_v
 template <typename T, typename... Ts> struct is_any : std::bool_constant<(std::is_same_v<T, Ts> || ...)> {};
 template <typename T, typename... Ts> constexpr bool is_any_v = is_any<T, Ts...>::value;
+
+// [7] gold::type_support::type_traits::function_traits
+template <typename T> struct function_traits;
+template <typename R, typename... Args> struct function_traits<std::function<R(Args...)>> {
+    // function_traits::return_type
+    using return_type = R;
+    // function_traits::arg_size
+    static constexpr size_t arg_size = sizeof...(Args);
+    // function_traits::arg
+    template <size_t N> struct arg {
+        // function_traits::arg::type
+        using type = typename std::tuple_element<N, std::tuple<Args...>>::type;
+    };
+    // ( ) function_traits::arg_t
+    template <size_t N> using arg_t = arg<N>::type;
 }}
 NS_END
 #undef NS_BEGIN
