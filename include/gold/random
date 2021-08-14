@@ -1,0 +1,21 @@
+// <gold/random> - gold++ library
+
+// Copyright (C) 2021 - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_RANDOM
+#define __GOLD_RANDOM
+
+#include <gold/bits/rand_gen.hpp>
+
+namespace gold {
+
+    /// qualified_distribution_type
+    /// random_number_generator
+
+    /// random
+    inline random_number_generator<std::mt19937> random {};
+
+} // namespace gold
+
+#endif // __GOLD_RANDOM

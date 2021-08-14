@@ -1,0 +1,61 @@
+// <gold/scope_guard> - gold++ library
+
+// Copyright (C) 2021 - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_SCOPE_GUARD
+#define __GOLD_SCOPE_GUARD
+
+#include <concepts>
+
+namespace gold {
+
+    /// scope_guard
+    template <typename T>
+        requires requires (T func) {
+            { func() } -> std::same_as<void>;
+        }
+    class scope_guard final {
+      public:
+        using invocation_type = T;
+
+      private:
+        T func_;
+        bool engaged_ { true };
+
+      public:
+        /// default constructor
+        scope_guard() = default;
+
+        /// explicitly deleted copy constructor
+        scope_guard(const scope_guard&) = delete;
+
+        /// user-defined move constructor
+        scope_guard(scope_guard&& other) : func_(std::move(other.func_)) {
+            other.release();
+        }
+
+        /// taking call back user-defined constructor
+        scope_guard(T func)
+        : func_(std::move(func)) {}
+
+        /// explicitly deleted copy assignment
+        scope_guard& operator=(const scope_guard&) = delete;
+
+        /// user-defined move constructor
+        scope_guard& operator=(scope_guard&& other) {
+            func_ = std::move(other.func_);
+            other.reset();
+        }
+
+        /// destructor
+        ~scope_guard() { if (engaged_) func_(); engaged_ = false; }
+
+        /// release
+        void release() { engaged_ = false; }
+    };
+
+} // namespace gold
+
+#endif // __GOLD_SCOPE_GUARD
+

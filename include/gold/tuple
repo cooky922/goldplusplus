@@ -1,0 +1,58 @@
+// <gold/tuple> - gold++ library
+
+// Copyright (C) 2021 - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_TUPLE
+#define __GOLD_TUPLE
+
+#include <gold/bits/tuple/tuple_concepts.hpp>
+#include <gold/bits/tuple/tuple_conversion.hpp>
+#include <gold/bits/tuple/tuple_algo.hpp>
+
+namespace gold {
+
+    //// defined in <gold/bits/tuple/tuple_concepts.hpp>
+    /// convertible_to_tuple
+    /// qualified_tuple
+    /// qualified_pair
+    /// decomposable
+
+    //// defined in <gold/bits/tuple/tuple_conversion.hpp>
+    /// to_tuple
+    /// to_tuple_ref
+    /// to_variant_at
+    /// to_array
+    /// to_array_variant [synonym to to_array]
+    /// to_array_any
+    /// to_array_ref [[incomplete]]
+
+    //// defined in <gold/bits/tuple/tuple_algo.hpp>
+    /// tuple_zip
+    /// apply_each
+    /// apply_each
+
+    //// tuple wrapper
+    /// tuple_wrapper
+    /// wrap_tuple
+
+    //// standalone
+    /// get_tuple_by_sequence
+    template <typename IndexSeq, typename TupleLike>
+    requires qualified_tuple<std::remove_reference_t<TupleLike>>
+    constexpr decltype(auto) get_tuple_by_sequence(TupleLike&& t) {
+        return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
+            return std::make_tuple(std::get<Is>(std::forward<TupleLike>(t))...);
+        }(IndexSeq{});
+    }
+
+    /// make_index_sequence_from_tuple
+    template <typename Tuple>
+    using make_index_sequence_from_tuple = std::make_index_sequence<
+        std::tuple_size_v<std::decay_t<Tuple>>
+    >;
+
+
+} // namespace gold
+
+#endif // __GOLD_TUPLE

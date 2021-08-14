@@ -1,0 +1,47 @@
+// <gold/value_sequence> - gold++ library
+
+// Copyright (C) 2021 - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_VALUE_SEQUENCE
+#define __GOLD_VALUE_SEQUENCE
+
+#include <gold/bits/value_sequence/primitives.hpp>
+#include <gold/bits/value_sequence/factory.hpp>
+#include <gold/bits/value_sequence/algoritm.hpp>
+
+namespace gold {
+
+    ///// Homogeneous Data Sequence
+    /// homo_value_sequence [general version]
+    /// bool_sequence
+    /// char_sequence
+    /// int_sequence
+    /// floating point sequence
+    /// float_sequence
+    /// double_sequence
+    /// long_double_sequence
+
+    ///// Heterogeneous Data Sequence
+    /// hetero_value_sequence
+
+    ///// Integer Sequence Factory
+    /// make_consecutive_integer_sequence
+    /// make_consecutive_index_sequence
+    /// make_consecutive_int_sequence
+    /// make_reverse_integer_sequence
+    /// make_reverse_index_sequence
+    /// make_reverse_int_sequence
+    /// make_interval_integer_sequence
+    /// make_interval_index_sequence
+    /// make_interval_int_sequence
+
+    //// Value Sequence Algorithm
+    /// value_sequence_at
+    /// value_sequence_offset
+    /// value_sequence_concat
+
+} // namespace gold
+
+#endif // __GOLD_VALUE_SEQUENCE
+

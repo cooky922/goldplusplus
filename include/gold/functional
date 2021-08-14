@@ -1,0 +1,64 @@
+// <gold/functional> - gold++ library
+
+// Copyright (C) 2021 - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_FUNCTIONAL
+#define __GOLD_FUNCTIONAL
+
+#include <functional>
+
+#include <gold/bits/tuple/tuple_util.hpp>
+
+namespace gold {
+
+    /// unref - unwrapping reference wrapper object by calling get, otherwise it will be forwarded
+    template <typename T>
+    constexpr T&& unref(T&& t) {
+        return std::forward<T>(t);
+    }
+
+    template <typename T>
+    constexpr T& unref(std::reference_wrapper<T> t) {
+        return t.get();
+    }
+
+    /// overload - useful for constructing a visitor with multiple overloads
+    template <typename... Fs>
+    struct overload : Fs... {
+        /// note: the deduction guide is automatically generated since C++20
+        using Fs::operator()...;
+    };
+
+    template <typename... Fs>
+    overload(Fs...) -> overload<Fs...>;
+
+    namespace __requirements {
+
+        template <typename... Ts>
+        concept has_at_least_ref_wrapper_ = (__detail::is_ref_wrapper_v_<std::remove_cvref_t<Ts>> || ...);
+
+    }
+
+    /// overload_unref - same to overload but it unwraps the reference wrapper if there is
+    template <typename... Fs>
+    struct overload_unref : overload<Fs...> {
+
+        overload_unref(Fs&&... fs)
+        : overload<Fs...>{ std::forward<Fs>(fs) ... } {}
+
+        using overload<Fs...>::operator();
+
+        template <typename... Ts>
+            requires __requirements::has_at_least_ref_wrapper_<Ts...>
+        constexpr auto operator()(Ts&&... args) {
+            return (*this)(unref(std::forward<Ts>(args))...);
+        }
+
+    };
+
+
+} // namespace gold
+
+#endif // __GOLD_FUNCTIONAL
+

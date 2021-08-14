@@ -1,0 +1,39 @@
+// <gold/vocabulary> - gold++ library
+
+// Copyright (C) 2021 - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_VOCABULARY
+#define __GOLD_VOCABULARY
+
+#include <optional>
+#include <any>
+#include <variant>
+
+namespace gold {
+
+    /// any_to_variant_cast
+    template <typename... Ts>
+    constexpr std::variant<Ts...> any_to_variant_cast(const std::any& any_) {
+        if (!any_.has_value()) throw std::bad_any_cast();
+
+        std::optional<std::variant<Ts...>> var_ = std::nullopt;
+
+        if (!((any_.type() == typeid(Ts) && (var_ = std::any_cast<Ts>(any_), true)) || ...))
+            throw std::bad_any_cast();
+
+        return std::move(*var_);
+    }
+
+    /// variant_cast
+    template <typename To, typename From>
+    constexpr To variant_cast(From&& from) {
+        return std::visit(
+            []<typename T>(T&& elem){ return To(std::forward<T>(elem)); },
+            std::forward<From>(from)
+        );
+    }
+
+} // namespace gold
+
+#endif // __GOLD_VOCABULARY

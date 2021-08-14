@@ -1,0 +1,67 @@
+// <gold/utility> - gold++ library
+
+// Copyright (C) 2021 - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_UTILITY
+#define __GOLD_UTILITY
+
+#include <utility>
+#include <concepts>
+
+namespace gold {
+
+    /// to_unsigned
+    template <std::integral T>
+    constexpr auto to_unsigned(const T& arg) {
+        return static_cast<std::make_unsigned_t<T>>(arg);
+    }
+
+    /// to_signed
+    template <std::integral T>
+    constexpr auto to_signed(const T& arg) {
+        return static_cast<std::make_signed_t<T>>(arg);
+    }
+
+    /// as_consteval
+    consteval auto as_consteval(const auto& arg) { return arg; }
+
+    /// unmove
+    template <typename T>
+    [[nodiscard]] constexpr std::remove_reference_t<T>& unmove(T&& t) { return t; }
+
+    /// unforward
+    template <typename T>
+        requires std::constructible_from<std::remove_reference_t<T>, T&&>
+    [[nodiscard]] constexpr std::remove_reference_t<T>&
+    unforward(T&& t)
+        noexcept(std::is_nothrow_constructible_v<std::remove_reference_t<T>, T&&>)
+    {
+        return std::forward<T>(t);
+    }
+
+    /// decay_copy
+    template <typename T>
+        requires std::constructible_from<std::remove_reference_t<T>, T&&>
+    [[nodiscard]] constexpr std::decay_t<T> decay_copy(T&& t)
+        noexcept(std::is_nothrow_convertible_v<T, std::remove_reference_t<T>>)
+    {
+        return std::forward<T>(t);
+    }
+
+    /// discard_unused
+    constexpr void discard_unused(const auto&...) noexcept {}
+
+    template <typename...>
+    constexpr void discard_unused() noexcept {}
+
+    /// first_scalar
+    template <typename T>
+    constexpr T* first_scalar(T* ptr) noexcept { return ptr; }
+
+    template <typename T, std::size_t N>
+    constexpr auto first_scalar(T (*ptr)[N]) noexcept { return first_scalar(&(*ptr)[0]); }
+
+} // namespace gold
+
+#endif // __GOLD_UTILITY
