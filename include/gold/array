@@ -7,7 +7,7 @@
 #define __GOLD_ARRAY
 
 #include <array>
-#include "bits/value_sequence/primitives.hpp"
+#include <gold/bits/value_sequence/primitives.hpp>
 
 namespace gold {
 
