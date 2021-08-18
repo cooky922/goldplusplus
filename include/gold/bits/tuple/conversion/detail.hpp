@@ -187,24 +187,3 @@ namespace gold::__detail {
 } // namespace gold::__detail
 
 #endif // __GOLD_BITS_TUPLE_CONVERSION_DETAIL_HPP
-
-/*
-template <typename... Args, std::size_t... I>
-constexpr std::array<std::variant<Args...>, sizeof...(Args)>
-tuple_to_array_impl(std::tuple<Args...> const& tuple,
-                    std::index_sequence<I...>)
-{
-    using V = std::variant<Args...>;
-    std::array<V, sizeof...(Args)> array = {
-        {V(std::in_place_index_t<I>{}, std::get<I>(tuple))...}};
-    return array;
-}
-
-template <typename... Args>
-constexpr std::array<std::variant<Args...>, sizeof...(Args)>
-tuple_to_array(std::tuple<Args...> const& tuple)
-
-{
-    return tuple_to_array_impl(tuple, std::index_sequence_for<Args...>{});
-}
-*/
