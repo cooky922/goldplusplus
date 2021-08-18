@@ -23,16 +23,6 @@ namespace gold {
         return t.get();
     }
 
-    /// overload - useful for constructing a visitor with multiple overloads
-    template <typename... Fs>
-    struct overload : Fs... {
-        /// note: the deduction guide is automatically generated since C++20
-        using Fs::operator()...;
-    };
-
-    template <typename... Fs>
-    overload(Fs...) -> overload<Fs...>;
-
     namespace __requirements {
 
         template <typename... Ts>
@@ -40,23 +30,54 @@ namespace gold {
 
     }
 
-    /// overload_unref - same to overload but it unwraps the reference wrapper if there is
+    /// overloaded
     template <typename... Fs>
-    struct overload_unref : overload<Fs...> {
+    struct overloaded : Fs... {
 
-        overload_unref(Fs&&... fs)
-        : overload<Fs...>{ std::forward<Fs>(fs) ... } {}
+        /// C++ 17 feature, bringing all 'operator()' into here
+        using Fs::operator()...;
 
-        using overload<Fs...>::operator();
-
+        /// automatic reference wrapper unwrapping
         template <typename... Ts>
             requires __requirements::has_at_least_ref_wrapper_<Ts...>
-        constexpr auto operator()(Ts&&... args) {
+        constexpr auto operator()(Ts&&... args) noexcept {
             return (*this)(unref(std::forward<Ts>(args))...);
         }
 
     };
 
+    /// deduction guide for overloaded class template
+    template <typename... Fs>
+    overloaded(Fs...) -> overloaded<Fs...>;
+
+    /// overload
+    template <typename... Ts>
+    constexpr auto overload(Ts&&... args) noexcept {
+        return overloaded{std::forward<Ts>(args)...};
+    }
+
+    /// bind_back - such that bind_back(f, args_0...)(args_1...) == f(args_1..., args_0...)
+    template <typename F, typename... Args>
+    constexpr auto bind_back(F&& f, Args&&... args) {
+        return [
+            f = std::forward<F>(f),
+            ...args = std::forward<Args>(args)
+        ]<typename... Ts>(Ts&&... first_args) {
+            return std::invoke(
+                f, std::forward<Ts>(first_args)..., args...
+            );
+        };
+    }
+
+    /// bind_rest
+    template <typename F, typename... Args>
+    constexpr auto bind_rest(F&& f, Args&&... args) {
+        return [f = std::forward<F>(f), ...args = std::forward<Args>(args)]<typename T>(T&& arg) {
+            return std::invoke(
+                f, std::forward<T>(arg), args...
+            );
+        };
+    }
 
 } // namespace gold
 
