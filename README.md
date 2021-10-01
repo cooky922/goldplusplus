@@ -10,6 +10,36 @@ This project is undergoing construction...
 * Simplified and relaxed semantics of some classes. 
 
 ## Category
+* `gold.format`
+* `gold.io`
+* `gold.vector`
+* `gold.string`
+* `gold.value_sequence`
+* `gold.type_sequence`
+* `gold.tuple`
+* `gold.pack`
+* `gold.type_name`
+* `gold.type_traits`
+* `gold.concepts`
+* `gold.scope_guard`
+* `gold.functional`
+* `gold.vocabulary`
+* `gold.assertion`
+* `gold.macros`
+* `gold.struct_array`
+* `gold.numbers`
+* `gold.random`
+* `gold.iterator`
+* `gold.ranges`
+* `gold.task`
+* `gold.generator`
+* `gold.unique_ptr`
+* `gold.utility`
+* `gold.preview.console`
+* `gold.preview.graphics`
+* `gold.preview.lazy_ranges`
+* `gold.preview.linear`
+
 * Input/output, formatting, string streams, manipulators, and file Handling
 * Additional built-in data types - string, number
 * Rich containers and algebraic data types 
@@ -24,8 +54,7 @@ This project is undergoing construction...
 * Logic Programming 
 
 ## Modes of Compilation
-This library may require only header files, or static libraries, or dynamic linkking libraries
+This library may require only header files, or static libraries, or dynamic linking libraries
 
 ## Dependencies 
-* OpenGL at least `v3.3` 
-* Freetype 
+* OpenGL at least `v3.3` (once `gold.preview.graphics` is available)
