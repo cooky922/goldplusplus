@@ -6,6 +6,20 @@ Official Directory
 + `gold::generic_lambda`
 + `gold::stateless_lambda`
 
+```c++
+namespace gold {
+
+  /// generic_lambda
+  template <typename T>
+  concept generic_lambda = lambda<T> && !requires { &T::operator(); };
+  
+  /// stateless_lambda
+  template <typename T>
+  concept stateless_lambda = lambda<T> && std::default_initializable<T>;
+  
+} // namespace gold
+```
+
 ## `[gold.format]`
 + `gold::format_write_context`
 + `gold::format_parse_context`
@@ -19,8 +33,85 @@ Official Directory
 
 ## `[gold.smart_ptrs]`
 + `gold::owned_ptr`
-+ `gold::shared_ptr` (unsynchronized for compile-time support)
++ `gold::shared_ptr` (unsynchronized version for compile-time support)
 + `gold::cloned_ptr`
+
+```c++
+namespace gold {
+
+  /// default_deleter
+  template <typename>
+  class default_deleter;
+  
+  template <typename T>
+  class default_deleter<T[]>;
+  
+  /// default_cloner
+  template <typename>
+  class default_cloner;
+  
+  template <typename T>
+  class default_cloner<T[]>;
+  
+  /// owned_ptr
+  template <typename T, typename D = default_deleter<T>>
+  class owned_ptr;
+  
+  template <typename T>
+  class owned_ptr<T[]>;
+  
+  /// shared_ptr
+  template <typename T>
+  class shared_ptr;
+  
+  template <typename T>
+  class shared_ptr<T[]>;
+  
+  /// cloned_ptr
+  template <typename T, typename C = default_cloner<T>, typename D = default_deleter<T>>
+  class cloned_ptr;
+  
+  template <typename T>
+  class cloned_ptr<T[]>;
+  
+  /// make_owned_ptr
+  template <typename T, typename... Args>
+  constexpr owned_ptr<T> make_owned_ptr(Args&&...);
+  
+  /// make_owned_ptr_for_overwrite
+  template <typename T>
+  constexpr owned_ptr<T> make_owned_ptr_for_overwrite() noexcept;
+  
+  /// allocate_owned_ptr
+  template <typename T, typename Alloc, typename... Args>
+  constexpr owned_ptr<T> allocate_owned_ptr(Alloc&, Args&&...);
+  
+  /// make_shared_ptr
+  template <typename T, typename... Args>
+  constexpr shared_ptr<T> make_shared_ptr(Args&&...);
+  
+  /// make_shared_ptr_for_overwrite
+  template <typename T>
+  constexpr shared_ptr<T> make_shared_ptr_for_overwrite() noexcept;
+  
+  /// allocate_shared_ptr
+  template <typename T, typename Alloc, typename... Args>
+  constexpr shared_ptr<T> allocate_shared_ptr(Alloc&, Args&&...);
+  
+  /// make_cloned_ptr
+  template <typename T, typename... Args>
+  constexpr cloned_ptr<T> make_cloned_ptr(Args&&...);
+  
+  /// make_cloned_ptr_for_overwrite
+  template <typename T>
+  constexpr cloned_ptr<T> make_cloned_ptr_for_overwrite() noexcept;
+  
+  /// allocate_cloned_ptr
+  template <typename T, typename Alloc, typename... Args>
+  constexpr cloned_ptr<T> allocate_cloned_ptr(Alloc&, Args&&...);
+
+} // namespace gold
+```
 
 ## `[gold.tuples]`
 + `gold::tuples::get`
@@ -29,6 +120,34 @@ Official Directory
 + `gold::tuples::apply_each_n`
 + `gold::tuples::zip`
 + `gold::tuples::unzip`
+
+```c++
+namespace gold::tuples {
+
+  inline namespace /* unspecified */ {
+    // get
+    template <std::size_t>
+    inline constexpr /* unspecified */ get = /* unspecified */;
+  }
+  
+  inline namespace /* unspecified */ {
+    // apply
+    inline constexpr /* unspecified */ apply = /* unspecified */;
+  }
+  
+  inline namespace /* unspecified */ {
+    // apply_each
+    inline constexpr /* unspecified */ apply_each = /* unspecified */;
+  }
+  
+  inline namespace /* unspecified */ {
+    // apply_each_n
+    template <std::size_t>
+    inline constexpr /* unspecified */ apply_each_n = /* unspecified */;
+  }
+
+} // namespace gold::tuples
+```
 
 ## `[gold.coroutines]`
 + revamp `gold::generator`
@@ -73,6 +192,42 @@ Official Directory
 + `gold::app`
 + `gold::window_base`
 + `gold::default_window`
+
+```c++
+namespace gold {
+
+  /// window_base
+  template <typename Derived>
+  class window_base {
+   public:
+    using native_handle_type = /* implementation defined */;
+    using derived_type       = Derived;
+   
+    constexpr window_base();
+    window_base(const window_base&) = delete;
+    
+    virtual ~window_base();
+    
+    native_handle_type native_handle() const noexcept;
+    
+   protected:
+    virtual std::string_view do_get_class_name() const = 0;
+    virtual void do_render() const = 0;
+    virtual void do_exit() const = 0;
+    virtual void do_input() const = 0;
+    virtual void do_timer() const = 0;
+    virtual void do_start() const = 0;
+  };
+  
+  /// default_window
+  class default_window : public window_base<default_window>;
+  
+  /// app
+  template <typename Window = default_window>
+  class app;
+
+} // namespace gold
+```
 
 ## `[gold.preview.graphics]`
 + `gold::graphics`
