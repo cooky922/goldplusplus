@@ -1,60 +1,62 @@
 # gold++ 
-A set of rich libraries in C++ which should require C++ 20 support. 
-
-## Note
-This project is undergoing construction...
+* A custom library written by an author :>
+* It requires at least C++23 support and GCC 12 compiler
+* It also requires windows platform
+* This project is still undergoing construction
 
 ## Goal
 * Utilizing modern C++ features and also retain its old functionality.
-* Having interpreter called `goldi++` for debugging purposes.
-* Simplified and relaxed semantics of some classes. 
+* Simplified and relaxed semantics of some entities.
+* Simple wrapper for some APIs
 
-## Category
-* `gold.format`
-* `gold.io`
-* `gold.vector`
-* `gold.string`
-* `gold.value_sequence`
-* `gold.type_sequence`
-* `gold.tuple`
-* `gold.pack`
-* `gold.type_name`
-* `gold.type_traits`
-* `gold.concepts`
-* `gold.scope_guard`
-* `gold.functional`
-* `gold.vocabulary`
-* `gold.assertion`
-* `gold.macros`
-* `gold.struct_array`
-* `gold.numbers`
-* `gold.random`
-* `gold.iterator`
-* `gold.ranges`
-* `gold.task`
-* `gold.generator`
-* `gold.unique_ptr`
-* `gold.utility`
-* `gold.preview.console`
-* `gold.preview.graphics`
-* `gold.preview.lazy_ranges`
-* `gold.preview.linear`
+## Categories
+* `[gold.format]` - text formatting
+* `[gold.io]`
+* `[gold.value_sequence]`
+* `[gold.type_sequence]`
+* `[gold.tuples]` - tuple utilities
+* `[gold.pack]` - algorithms for parameter packs
+* `[gold.type_name]` - readable type name
+* `[gold.type_traits]` - type traits
+* `[gold.invocable_traits]` - type traits for invocable types
+* `[gold.concepts]` - concepts
+* `[gold.scope_guard]`
+* `[gold.functional]`
+* `[gold.vocabulary]`
+* `[gold.assertion]`
+* `[gold.struct_array]`
+* `[gold.numbers]`
+* `[gold.math_int]`
+* `[gold.random]`
+* `[gold.iterator]`
+* `[gold.ranges]`
+* `[gold.task]`
+* `[gold.generator]`
+* `[gold.unique_ptr]`
+* `[gold.utility]`
+* `[gold.any]`
+* `[gold.expected]`
+* `[gold.console]`
+* `[gold.dynamic_library]`
+* `[gold.preview.apps]`
+* `[gold.preview.graphics]`
+* `[gold.preview.lazy_ranges]`
+* `[gold.preview.linear]`
 
-* Input/output, formatting, string streams, manipulators, and file Handling
-* Additional built-in data types - string, number
-* Rich containers and algebraic data types 
-* Console features - colors, canvas
-* Keyboard and mouse handling 
-* Algorithms - modifying, non-owning, etc.
-* File parsing - especially CSV, XML, and JSON 
-* Utilites - omnibox, ranges, etc. 
-* Windows GUI C++ Wrapper
-* OpenGL C++ Wrapper 
-* Mathematics - statistics, linear, calculus 
-* Logic Programming 
+## Roadmap
+* Improved Text Formatting
+* Windows GUI Wrapper
+* Graphics Library - canvas, basic graphical object types
+* Mathematics Library - lineary algebra, calculus, statistics, type-erased number
+* File Parsing - `.csv`, `.xml`, and `.json`
+* Device Handling - input events 
+* OpenGL C++ Wrapper and GDI+ Wrapper through `[gold.graphics]`
 
 ## Modes of Compilation
-This library may require only header files, or static libraries, or dynamic linking libraries
+* `gold++` library requires static linking with static library `libgold++.a`
 
 ## Dependencies 
-* OpenGL at least `v3.3` (once `gold.preview.graphics` is available)
+* Win API
+* GDI+
+* Direct2D and DirectWrite
+* OpenGL at least `v3.3` (once `[gold.preview.graphics]` is available)
