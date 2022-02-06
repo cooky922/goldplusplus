@@ -1,0 +1,167 @@
+// <gold/dynamic_library> - gold++ library
+
+// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_DYNAMIC_LIBRARY
+#define __GOLD_DYNAMIC_LIBRARY
+
+#include <vector>
+#include <string>
+#include <stdexcept>
+
+extern "C" { struct HINSTANCE__; }
+
+namespace gold {
+
+    /// dynamic_library_error
+    class dynamic_library_error : std::runtime_error {
+      public:
+        explicit dynamic_library_error(const char* s)
+        : std::runtime_error(s) {}
+
+        virtual ~dynamic_library_error() noexcept = default;
+    };
+
+    class dynamic_library;
+
+    /// dl_symbol
+    class dl_symbol {
+      public:
+        using native_handle_type = long long int (*) ();
+
+      private:
+        native_handle_type m_symbol_;
+
+        constexpr dl_symbol() noexcept = default;
+        constexpr dl_symbol(native_handle_type arg) noexcept
+        : m_symbol_(arg) {}
+
+        friend class dynamic_library;
+
+        template <typename T>
+        friend T* dl_symbol_cast(const dl_symbol*) noexcept;
+
+      public:
+        /// .native_handle
+        native_handle_type native_handle() const noexcept { return m_symbol_; }
+
+        /// .address_to
+        const void* address_to() const noexcept { return reinterpret_cast<void*>(m_symbol_); }
+
+        /// operator bool
+        explicit operator bool() const noexcept { return static_cast<bool>(m_symbol_); }
+    };
+
+    /// dl_symbol_cast
+    template <typename T>
+    T* dl_symbol_cast(const dl_symbol* op) noexcept {
+        return reinterpret_cast<T*>(op->m_symbol_);
+    }
+
+    template <typename T>
+    T& dl_symbol_cast(const dl_symbol& op) {
+        if (auto result = dll_symbol_cast<T>(&op); result)
+            return *result;
+        throw dynamic_library_error("invalid 'dl_symbol_cast' operation");
+    }
+
+    namespace __dynamic_lib {
+
+        using dynamic_lib_handle = ::HINSTANCE__*;
+
+    } // namespace __dynamic_lib
+
+    /// dynamic_library
+    class dynamic_library {
+      private:
+        __dynamic_lib::dynamic_lib_handle m_handle_;
+
+      public:
+        /// constructors
+        explicit dynamic_library(std::string_view);
+
+        dynamic_library(const dynamic_library&) = delete;
+
+        dynamic_library(dynamic_library&&) noexcept;
+
+        /// destructor
+        ~dynamic_library();
+
+        /// assignments
+        dynamic_library& operator=(const dynamic_library&) = delete;
+
+        dynamic_library& operator=(dynamic_library&&) noexcept;
+
+        //// Observers
+        /// has_loaded
+        bool has_loaded() const noexcept;
+
+        /// explicit operator bool
+        explicit operator bool() const noexcept;
+
+        //// Modifiers
+        void reset();
+
+        void reset(std::string_view);
+
+        //// Symbols Access
+        /// base_address
+        const void* base_address() const;
+
+        /// entry_point_address
+        const void* entry_point_address() const;
+
+        /// size
+        std::size_t size() const;
+
+        /// name [ synonymous to 'module_name' ]
+        std::string name() const;
+
+        /// module_name
+        std::string module_name() const;
+
+        /// image_name
+        std::string image_name() const;
+
+        /// symbol_names
+        std::vector<std::string> symbol_names() const;
+
+        /// symbols
+        std::vector<gold::dl_symbol> symbols() const;
+
+        /// symbol
+        gold::dl_symbol symbol(std::string_view) const;
+
+        /// symbol_as_if
+        template <typename T>
+        T* symbol_as_if(std::string_view sym) const noexcept {
+            auto sym_result = this->symbol(sym);
+            return dl_symbol_cast<T>(&sym_result);
+        }
+
+        /// symbol_as
+        template <typename T>
+        T& symbol_as(std::string_view sym) const {
+            if (auto result = this->template symbol_as_if<T>(sym); result)
+                return *result;
+            throw dynamic_library_error("invalid 'symbol_as' operation");
+        }
+
+        /// invoke_symbol
+        template <typename R, typename... Args>
+        decltype(auto) invoke_symbol(std::string_view sym, Args&&... args) const {
+            return this->template symbol_as<R(Args...)>(sym)(std::forward<Args>(args)...);
+        }
+
+        //// Comparisons
+        /// operator==
+        bool operator==(const dynamic_library&) const noexcept = default;
+
+        /// operator<=>
+        auto operator<=>(const dynamic_library&) const noexcept = default;
+    };
+
+} // namespace gold
+
+#endif // __GOLD_DYNAMIC_LIBRARY

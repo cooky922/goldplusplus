@@ -1,0 +1,61 @@
+// <gold/pack> - gold++ library
+
+// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_PACK
+#define __GOLD_PACK
+
+#include <gold/bits/pack_getter.hpp>
+
+/// pack utilities for template type parameter
+
+namespace gold {
+
+    /// pack_size
+    template <typename... Ts>
+    inline constexpr std::size_t pack_size = sizeof...(Ts);
+
+    /// pack_element_at
+    template <std::size_t I, typename... Ts>
+        requires (I < sizeof...(Ts))
+    using pack_element_at = typename decltype(
+        __pack::select_<I>(__pack::indexer_<std::index_sequence_for<Ts...>, Ts...>{})
+    )::type;
+
+    /// pack_at_front
+    template <typename... Ts>
+    using pack_at_front = pack_element_at<0, Ts...>;
+
+    /// pack_at_back
+    template <typename... Ts>
+    using pack_at_back = typename __pack::pack_at_back_impl_<Ts...>::type;
+
+    //// Template Utilities
+    /// pack_for_each
+    template <typename... Ts, typename F>
+    constexpr void pack_for_each(F&& f) noexcept {
+        /// requirement:
+        /// the return type must be discardable
+        /// should only be lambda or function object (templated)
+        (f.template operator()<Ts>(), ...);
+    }
+
+    /// pack_for_each
+    template <auto... Ns, typename F>
+    constexpr void pack_for_each(F&& f) noexcept {
+        /// same to pack_for_each type overload
+        (f.template operator()<Ns>(), ...);
+    }
+
+    /// pack_get
+    template <std::size_t I, typename... Args>
+    constexpr decltype(auto) pack_get(Args&&... args) noexcept {
+        return __pack::get_at_impl<std::make_index_sequence<I>>::at(std::forward<Args>(args)...);
+    }
+
+    /// sequence_for_each
+
+} // namespace gold
+
+#endif // __GOLD_PACK

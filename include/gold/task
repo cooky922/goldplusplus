@@ -1,0 +1,11 @@
+// <gold/task> - gold++ library
+
+// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_TASK
+#define __GOLD_TASK
+
+#include <gold/bits/coroutine/coro_task.hpp>
+
+#endif // __GOLD_TASK

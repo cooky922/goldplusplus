@@ -1,0 +1,184 @@
+// <gold/basic_types> - gold++ library
+
+// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_CONSOLE
+#define __GOLD_CONSOLE
+
+#include <string>
+#include <string_view>
+#include <bits/chrono.h>
+#include <gold/format>
+#include <gold/bits/type_traits/specialization_of.hpp>
+#include <gold/bits/consoles.hpp>
+
+namespace gold {
+
+    /// console_type [ fwd decl]
+    class console_type;
+
+    namespace __consoles { console_type& current_console(); } // namespace __consoles
+
+    /// console_type
+    class console_type {
+      public:
+        /// native_handle_type
+        using native_handle_type = gold::native_handle_t;
+
+      private:
+
+        // member data
+        native_handle_type m_out_, m_in_, m_err_;
+
+        console_type();
+
+        friend console_type& __consoles::current_console();
+
+        __consoles::screen_buffer_info_record mf_get_screen_buffer_info_();
+        __consoles::input_record mf_scan_input_();
+
+        char mf_getch_();
+
+        void mf_sleep_(dword_t dur);
+        void mf_beep_(dword_t freq, dword_t dur);
+
+      public:
+        console_type(const console_type&) = delete;
+        console_type(console_type&&) = delete;
+        console_type& operator=(const console_type&) = delete;
+        console_type& operator=(console_type&&) = delete;
+
+        /// input_handle
+        native_handle_type input_handle() const noexcept;
+
+        /// output_handle
+        native_handle_type output_handle() const noexcept;
+
+        /// error_handle
+        native_handle_type error_handle() const noexcept;
+
+        /// output_mode
+        consoles::output_mode_kind output_mode();
+
+        console_type& output_mode(consoles::output_mode_kind);
+
+        /// input_mode
+        consoles::input_mode_kind input_mode();
+
+        console_type& input_mode(consoles::input_mode_kind);
+
+        /// dimension
+        consoles::dimension_record dimension();
+
+        /// column_count
+        consoles::unit_t column_count();
+
+        /// row_count
+        consoles::unit_t row_count();
+
+        /// cursor_pos
+        consoles::coord_record cursor_pos();
+
+        console_type& cursor_pos(consoles::coord_record);
+
+        /// max_title_size
+        static constexpr std::size_t max_title_size() { return 270; }
+
+        /// title
+        std::string_view title();
+
+        console_type& title(std::string_view);
+
+        /// print_char
+        console_type& print_char(char);
+
+        /// print_char_at
+        console_type& print_char_at(consoles::coord_record, char);
+
+        /// unformatted_print
+        console_type& unformatted_print(std::string_view);
+
+        /// print
+        console_type& print(std::string_view sv, const auto&... args) {
+            if constexpr (sizeof...(args) == 0)
+                return unformatted_print(sv);
+            else {
+                auto output_text = gold::format(sv, args...);
+                return unformatted_print(output_text);
+            }
+        }
+
+        /// print_at - the next cursor will be the original before printing
+        console_type& print_at(consoles::coord_record c, std::string_view sv, const auto&... args) {
+            auto original_cursor = this->cursor_pos();
+            this->cursor_pos(c);
+            this->print(sv, args...);
+            return this->cursor_pos(original_cursor);
+        }
+
+        /// printline
+        console_type& printline(std::string_view sv, const auto&... args) {
+            this->print(sv, args...);
+            return this->print_char('\n');
+        }
+
+        /// scan_char
+        char scan_char();
+
+        /// scan_key
+        char scan_key();
+
+        /// scanline
+        std::string scanline();
+
+        /// scan_input
+
+        /// scan_mouse_input
+        consoles::mouse_event_record scan_mouse_input();
+
+        /// scan_key_input
+        consoles::key_event_record scan_key_input();
+
+        /// scan_output
+
+        /// clear
+        console_type& clear();
+
+        /// color
+        consoles::color_kind color();
+
+        console_type& color(consoles::color_kind);
+
+        /// color_screen
+        console_type& color_screen(consoles::color_kind);
+
+        /// partial_color
+
+        /// pause
+        console_type& pause();
+
+        /// sleep
+        template <typename Duration>
+            requires (gold::is_specialization_of_v<Duration, std::chrono::duration>())
+        console_type& sleep(Duration dur) {
+            mf_sleep_(static_cast<gold::dword_t>(std::chrono::duration_cast<std::chrono::milliseconds>(dur).count()));
+            return *this;
+        }
+
+        /// beep
+        template <typename Duration>
+            requires (gold::is_specialization_of_v<Duration, std::chrono::duration>())
+        console_type& beep(consoles::sound_frequency freq, Duration dur) {
+            mf_beep_(freq.value, static_cast<gold::dword_t>(std::chrono::duration_cast<std::chrono::milliseconds>(dur).count()));
+            return *this;
+        }
+
+    };
+
+    /// console
+    extern console_type& console;
+
+} // namespace gold
+
+#endif // __GOLD_CONSOLE

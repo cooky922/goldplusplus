@@ -1,0 +1,36 @@
+// <gold/assertion> - gold++ library
+
+// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_ASSERTION
+#define __GOLD_ASSERTION
+
+#include <stdexcept>
+
+namespace gold {
+
+    /// assertion_error
+    class assertion_error final : public std::runtime_error {
+      private:
+        explicit assertion_error(const char* msg)
+        : std::runtime_error(msg) {}
+
+        static void on_error(const char*) {}
+
+      public:
+        friend constexpr void system_assert(bool, const char*);
+
+    };
+
+    /// system_assert
+    constexpr void system_assert(bool cond, const char* msg = "assertion error") {
+        #ifndef NDEBUG
+        if (!cond)
+            throw assertion_error{msg};
+        #endif // NDEBUG
+    }
+
+} // namespace gold
+
+#endif // __GOLD_ASSERTION

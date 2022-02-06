@@ -1,0 +1,87 @@
+// <gold/scope_guard> - gold++ library
+
+// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_SCOPE_GUARD
+#define __GOLD_SCOPE_GUARD
+
+#include <concepts>
+
+namespace gold {
+
+    /// scope_guard
+    template <typename F>
+        requires requires (F f) {
+            { f() } -> std::same_as<void>;
+        }
+    class scope_guard final {
+      public:
+        using invocable_type = F;
+
+      private:
+        invocable_type m_func_;
+        bool m_engaged_ { true };
+
+      public:
+        /// default ctor
+        scope_guard() = default;
+
+        /// explicit deleted copy ctor
+        scope_guard(const scope_guard&) = delete;
+
+        /// move ctor
+        constexpr scope_guard(scoped_guard&& other) noexcept
+        : m_func_(other.release()) {}
+
+        /// one-arg ctor
+        constexpr scope_guard(F func)
+        : m_func_(std::move(func)) {}
+
+        /// dtor
+        constexpr ~scope_guard() { this->reset(); }
+
+        /// explicit deleted copy assign
+        scope_guard& operator=(const scope_guard&) = delete;
+
+        /// move assign
+        constexpr scope_guard& operator=(scope_guard&& other) noexcept {
+            m_func_ = other.release();
+            if (!m_engaged_)
+                m_engaged_ = true;
+            return *this;
+        }
+
+        /// reset
+        constexpr void reset() noexcept {
+            if (m_engaged_) {
+                m_engaged_ = false;
+                m_func_();
+            }
+        }
+
+        /// release
+        constexpr invocable_type release() noexcept {
+            m_engaged_ = false;
+            return std::move(m_func_);
+        }
+
+        /// swap
+        constexpr void swap(scope_guard& other) noexcept
+            requires std::swappable<invocable_type> {
+            using std::swap;
+            swap(m_func_, other.m_func_);
+            swap(m_engaged_, other.m_engaged_);
+        }
+
+        /// friend swap
+        friend constexpr void swap(scope_guard& lhs, scope_guard& rhs) noexcept(noexcept(lhs.swap(rhs))) {
+            lhs.swap(rhs);
+        }
+
+    };
+
+} // namespace gold
+
+#endif // __GOLD_SCOPE_GUARD
+

@@ -1,0 +1,24 @@
+// <gold/expected> - gold++ library
+
+// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_EXPECTED
+#define __GOLD_EXPECTED
+
+#include <gold/bits/expected/bad_access.hpp>
+#include <gold/bits/expected/unexpected.hpp>
+#include <gold/bits/expected/expected_impl.hpp>
+
+namespace gold {
+
+    /// bad_expected_access
+    /// bad_unexpected_access
+    /// unexpected
+    /// unexpect_t
+    /// unexpect
+    /// expected
+
+} // namespace gold
+
+#endif // __GOLD_EXPECTED

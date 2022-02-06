@@ -1,0 +1,31 @@
+// <gold/numbers> - gold++ library
+
+// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_NUMBERS
+#define __GOLD_NUMBERS
+
+#include <concepts>
+#include <numbers>
+
+namespace gold::numbers {
+
+    /// tau_v
+    template <std::floating_point T>
+    inline constexpr T tau_v = T(6.283185307179586476925286766559005768L);
+
+    /// tau
+    inline constexpr double tau = tau_v<double>;
+
+    /// silver_ratio_v
+    template <std::floating_point T>
+    inline constexpr T silver_ratio_v = T(2.4142135623730950488L);
+
+    /// silver_ratio
+    inline constexpr double silver_ratio = silver_ratio_v<double>;
+
+} // namespace gold::numbers
+
+#endif // __GOLD_NUMBERS
+

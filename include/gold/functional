@@ -1,0 +1,50 @@
+// <gold/functional> - gold++ library
+
+// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_FUNCTIONAL
+#define __GOLD_FUNCTIONAL
+
+#include <gold/bits/functional/overload.hpp>
+#include <gold/bits/functional/invoke.hpp>
+
+namespace gold {
+
+    /// make_overload - defined in  [ <gold/bits/functional/overload.hpp> ]
+    /// unref
+    /// invoke - defined in [ <gold/bits/functional/invoke.hpp> ]
+    /// invoke_r - defined in [ <gold/bits/functional/invoke.hpp> ]
+    /// void_like - defined in [ <gold/bits/functional/invoke.hpp> ]
+    /// try_invoke - defined in [ <gold/bits/functional/invoke.hpp> ]
+
+    /// bind_back - such that bind_back(f, args_0...)(args_1...) == f(args_1..., args_0...)
+    template <typename F, typename... Args>
+    constexpr auto bind_back(F&& f, Args&&... args) {
+        return [
+            f = std::forward<F>(f),
+            ...args = std::forward<Args>(args)
+        ]<typename... Ts>(Ts&&... first_args) {
+            return gold::invoke(
+                f, std::forward<Ts>(first_args)..., args...
+            );
+        };
+    }
+
+    /// bind_rest
+    template <typename F, typename... Args>
+    constexpr auto bind_rest(F&& f, Args&&... args) {
+        return [f = std::forward<F>(f), ...args = std::forward<Args>(args)]<typename T>(T&& arg) {
+            return gold::invoke(
+                f, std::forward<T>(arg), args...
+            );
+        };
+    }
+
+    /// compose
+    /// ex: compose(f, g, h)(x) ==
+
+
+} // namespace gold
+
+#endif // __GOLD_FUNCTIONAL

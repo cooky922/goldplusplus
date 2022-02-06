@@ -1,0 +1,76 @@
+// <gold/type_traits> - gold++ library
+
+// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_TYPE_TRAITS
+#define __GOLD_TYPE_TRAITS
+
+#include <gold/bits/type_traits/helper_class.hpp>
+#include <gold/bits/type_traits/type_classification.hpp>
+#include <gold/bits/type_traits/type_properties.hpp>
+#include <gold/bits/type_traits/type_relationships.hpp>
+#include <gold/bits/type_traits/specialization_of.hpp>
+#include <gold/bits/type_traits/type_transformations.hpp>
+#include <gold/bits/type_traits/detection.hpp>
+
+namespace gold {
+
+    //// Helper Utilities
+    /// type_sentinel
+    /// types_inherited
+    /// size_constant
+    /// index_constant
+    /// index_constant_v
+    /// always_true
+    /// always_false
+
+    //// Type Classification
+    /// is_char
+    /// is_char_v
+
+    //// Type Properties
+    /// is_complete_type
+    /// is_complete_type_v
+    /// pointer_rank
+    /// pointer_rank_v
+
+    //// Type Relationships
+    /// is_not_same
+    /// is_not_same_v
+    /// are_same
+    /// are_same_v
+    /// are_not_same
+    /// are_not_same_v
+    /// is_any
+    /// is_any_v
+    /// is_specialization_of_v ()
+    /// is_narrowing_convertible
+    /// is_narrowing_convertible_v
+
+    //// Type Transformation
+    /// conditionals
+    /// conditionals_t
+    /// decay_if
+    /// decay_if_t
+    /// type_apply
+    /// type_apply_t
+    /// type_apply_if
+    /// type_apply_if_t
+    /// disable_if
+    /// disable_if_t
+
+    //// Detection Utilites
+    /// is_detected
+    /// is_detected_v
+    /// detected_t
+    /// detected_or
+    /// detected_or_t
+    /// is_detected_exact
+    /// is_detected_exact_v
+    /// is_detected_convertible
+    /// is_detected_convertible_v
+
+} // namespace gold
+
+#endif // __GOLD_TYPE_TRAITS

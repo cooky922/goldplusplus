@@ -1,0 +1,47 @@
+// <gold/concepts> - gold++ library
+
+// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_CONCEPTS
+#define __GOLD_CONCEPTS
+
+#include <gold/bits/concepts/types.hpp>
+#include <gold/bits/concepts/lambda.hpp>
+#include <gold/bits/concepts/string.hpp>
+#include <gold/bits/concepts/stream.hpp>
+
+namespace gold {
+
+    //// Types
+    /// lambda		             [ defined in <gold/bits/concepts/lambda.hpp> ]
+    /// char_type	             [ defined in <gold/bits/concepts/types.hpp>  ]
+    /// ordering_type            [ defined in <gold/bits/concepts/types.hpp>  ]
+    /// qualified_numeric        [ defined in <gold/bits/concepts/types.hpp>  ]
+    /// complete_type            [ defined in <gold/bits/concepts/types.hpp>  ]
+    /// structural               [ defined in <gold/bits/concepts/types.hpp>  ]
+    /// same_all                 [ defined in <gold/bits/concepts/types.hpp>  ]
+    /// different_from           [ defined in <gold/bits/concepts/types.hpp>  ]
+    /// brace_constructible_from [ defined in <gold/bits/concepts/types.hpp>  ]
+
+    //// Strings
+    /// enable_qualified_string  [ defined in <gold/bits/concepts/string.hpp> ]
+    /// qualified_basic_string   [ defined in <gold/bits/concepts/string.hpp> ]
+    /// qualified_string         [ defined in <gold/bits/concepts/string.hpp> ]
+    /// qualified_wstring        [ defined in <gold/bits/concepts/string.hpp> ]
+
+    //// Streams
+    /// basic_stream_insertable       [ defined in <gold/bits/concepts/stream.hpp> ]
+    /// basic_stream_extractable      [ defined in <gold/bits/concepts/stream.hpp> ]
+    /// stream_insertable             [ defined in <gold/bits/concepts/stream.hpp> ]
+    /// wstream_insertable            [ defined in <gold/bits/concepts/stream.hpp> ]
+    /// stream_extractable            [ defined in <gold/bits/concepts/stream.hpp> ]
+    /// wstream_extractable           [ defined in <gold/bits/concepts/stream.hpp> ]
+    /// range_basic_stream_insertable [ defined in <gold/bits/concepts/stream.hpp> ]
+    /// range_stream_insertable       [ defined in <gold/bits/concepts/stream.hpp> ]
+    /// range_wstream_insertable      [ defined in <gold/bits/concepts/stream.hpp> ]
+
+
+} // namespace gold
+
+#endif // __GOLD_CONCEPTS

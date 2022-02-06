@@ -1,0 +1,60 @@
+// <gold/bit> - gold++ library
+
+// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_BIT
+#define __GOLD_BIT
+
+#include <cstddef>
+#include <bit>
+#include <array>
+
+namespace gold {
+
+    namespace __bit {
+
+        template <typename T>
+        concept trivially_copyable = std::is_trivially_copyable_v<T>;
+
+        template <typename T, typename U>
+        concept bit_castable = (sizeof(T) == sizeof(U))
+                            && trivially_copyable<T>
+                            && trivially_copyable<U>;
+
+
+    } // namespace __bit
+
+    /// to_bytes
+    template <__bit::trivially_copyable T>
+    constexpr auto to_bytes(const T& obj) noexcept {
+        return std::bit_cast<
+            std::array<const std::byte, sizeof(T)>
+        >(obj);
+    }
+
+    /// to_writable_bytes
+    template <typename T>
+        requires __bit::trivially_copyable<std::remove_cvref_t<T>>
+    constexpr auto to_writable_bytes(T&& obj) noexcept {
+        return std::bit_cast<
+            std::array<std::byte, sizeof(T)>
+        >(std::forward<T>(obj));
+    }
+
+    /// from_bytes
+    template <__bit::trivially_copyable T, std::size_t N>
+        requires (sizeof(T) == N)
+    constexpr auto from_bytes(std::array<std::byte, N> arr) noexcept {
+        return std::bit_cast<T>(arr);
+    }
+
+    template <__bit::trivially_copyable T, std::size_t N>
+        requires (sizeof(T) == N)
+    constexpr auto from_bytes(std::array<const std::byte, N> arr) noexcept {
+        return std::bit_cast<const T>(arr);
+    }
+
+} // namespace gold
+
+#endif // __GOLD_BIT

@@ -1,0 +1,61 @@
+// <gold/basic_types> - gold++ library
+
+// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_BASIC_TYPES
+#define __GOLD_BASIC_TYPES
+
+#include <cstddef>
+#include <cstdint>
+
+namespace gold {
+
+    /// signed ints
+    using int_t    = int;
+    using short_t  = short;
+    using int8_t   = std::int8_t;
+    using int16_t  = std::int16_t;
+    using int32_t  = std::int32_t;
+    using int64_t  = std::int64_t;
+    using int128_t = __int128_t;
+
+    /// unsigned ints
+    using uint_t     = unsigned int;
+    using ushort_t   = unsigned short;
+    using uint8_t    = std::uint8_t;
+    using uint16_t   = std::uint16_t;
+    using uint32_t   = std::uint32_t;
+    using uint64_t   = std::uint64_t;
+    using uint128_t  = __uint128_t;
+
+    /// floating points
+    using float16_t  = _Float16;
+    using float32_t  = float;
+    using float64_t  = double;
+    using float128_t = long double;
+
+    /// word-term types
+    using word_t  = unsigned short;
+    using dword_t = unsigned long;
+
+    /// handle type [ through pointers ]
+    using native_handle_t = void*;
+
+    /// characters and strings
+    #if defined(UNICODE) || defined(_UNICODE)
+    using tchar_t = wchar_t;
+    #else
+    using tchar_t = char;
+    #endif // defined(UNICODE) || defined(_UNICODE)
+    using cstring_t  = const char*;
+    using wcstring_t = const wchar_t*;
+    #if defined(UNICODE) || defined(_UNICODE)
+    using tcstring_t = wcstring_t;
+    #else
+    using tcstring_t = cstring_t;
+    #endif // defined(UNICODE) || defined(_UNICODE)
+
+} // namespace gold
+
+#endif // __GOLD_BASIC_TYPES

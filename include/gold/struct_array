@@ -1,0 +1,21 @@
+// <gold/struct_array> - gold++ library
+
+// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_STRUCT_ARRAY
+#define __GOLD_STRUCT_ARRAY
+
+#include <gold/bits/struct_array.hpp>
+
+namespace gold::inline literals::inline struct_literals {
+
+    /// string literal operator template - for string into 'struct_array'
+    template <struct_array A>
+    constexpr auto operator""_fs() {
+        return struct_array { A };
+    }
+
+} // namespace gold::inline literals::inline struct_literals
+
+#endif // __GOLD_STRUCT_ARRAY
