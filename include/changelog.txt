@@ -1,0 +1,39 @@
+ADDITIONS SINCE 2022
+    | from <gold/utility> add 'gold::forward_like' (1/1/2022)
+    | add <gold/expected> (1/2/2022)
+    | from <gold/functional> add 'gold::consteval_invoke[_r]' (1/15/2022)
+    | add <gold/basic_types> (1/24/2022)
+    | from <gold/utility> add 'gold::enum_ops::enable_enum_ops' (1/24/2022)
+    | add <gold/console> (1/24/2022)
+    | new static library 'libgold++.a' (linked by using flag '-lgold++') (1/24/2022)
+    | new makefile created (1/24/2022)
+    | fixed bugs on <gold/any> (1/25/2022)
+        | especially on moving 'any_kind' object in which
+          handle is accidentally assign from 'nullptr'
+    | added new member functions from 'gold::console_type' (1/28/2022)
+        | '.scan_mouse_input'
+        | '.scan_key_input'
+        | '.color_screen'
+        | '.print_at'
+        | '.print_char_at'
+    | add <gold/dynamic_library> (1/28/2022)
+    | add <gold/demangling> (1/29/2022)
+        | remove 'gold::demangle' from <gold/type_name>
+    | added new member functions from 'gold::console_type' (1/29/2022)
+        | '.input_handle'
+        | '.output_handle'
+        | '.error_handle'
+    | new improvements on <gold/any> (1/30/2022)
+        | replaced 'gold::bad_any_cast' with 'gold::bad_any_access'
+        | support for 'operator==' and 'operator<=>' for both any-types
+    | removed <gold/property> (1/30/2022)
+    | improved 'gold::void_like' (2/1/2022)
+        | added 'gold::void_like_v'
+        | added call operator
+    | fixed bugs on <gold/any> (2/1/2022)
+        | fixed 'gold::__any::basic_any_handler::s_swap_'
+          where non-consteval branch invokes 'swap'
+          that some of those parameters passed in aren't actually
+          swappable
+        | fixed 'operator==' and 'operator<=>' for void-containing
+          any-like objects
