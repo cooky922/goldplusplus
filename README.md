@@ -10,33 +10,42 @@
 * Simple wrapper for some APIs
 
 ## Categories
-* `[gold.format]` - text formatting
-* `[gold.io]`
+* `[gold.format]` - Test Formatting
+* `[gold.io]` - I/O Library
+  * `[gold.io.console]` - Console API
 * `[gold.value_sequence]`
 * `[gold.type_sequence]`
-* `[gold.tuples]` - tuple utilities
-* `[gold.pack]` - algorithms for parameter packs
-* `[gold.type_name]` - readable type name
-* `[gold.type_traits]` - type traits
-* `[gold.invocable_traits]` - type traits for invocable types
-* `[gold.concepts]` - concepts
-* `[gold.scope_guard]`
-* `[gold.functional]`
-* `[gold.vocabulary]`
-* `[gold.assertion]`
-* `[gold.struct_array]`
-* `[gold.numbers]`
-* `[gold.math_int]`
-* `[gold.random]`
-* `[gold.iterator]`
-* `[gold.ranges]`
-* `[gold.task]`
-* `[gold.generator]`
-* `[gold.unique_ptr]`
-* `[gold.utility]`
-* `[gold.any]`
-* `[gold.expected]`
-* `[gold.console]`
+* `[gold.tuples]` - Tuple Utilities
+* `[gold.types]` - Types Library
+  * `[gold.types.basic]` - type aliases
+  * `[gold.types.name]` - readable type information
+  * `[gold.types.traits]` - type traits
+  * `[gold.types.invocable_traits]` - invocable type traits
+  * `[gold.types.concepts]` - basic type concepts
+* `[gold.utility]` - General Purpose Utilities
+  * `[gold.utility.ops]`
+  * `[gold.utility.scope_guard]`
+  * `[gold.utility.any]` - type-safe type-erased type
+  * `[gold.utility.expected]` - alternative to exceptions
+  * `[gold.utility.vocabulary]` - vocabulary types
+  * `[gold.utility.demangling]` - demangling using Itanium ABI
+  * `[gold.utility.pack]` - Parameter Pack Algorithms
+* `[gold.functional]` - Functional-Programming Library
+* `[gold.diagnostic]` - Diagnostic Library
+  * `[gold.diagnostic.assertion]`
+* `[gold.containers]` - Containers and Collections Library
+  * `[gold.containers.struct_array]`
+* `[gold.math]` - Mathematics Library
+  * `[gold.math.numbers]` - Mathematical Constants and Number Traits
+  * `[gold.math.math_int]` - Integer Arithmetic
+  * `[gold.math.random]` - Random Generation
+* `[gold.ranges]` - Generalized Ranges and Iterators Library
+  * `[gold.ranges.iterators]` - Iterators
+* `[gold.coroutines]` - Coroutine Library
+  * `[gold.coroutines.traits]`
+  * `[gold.coroutines.task]`
+  * `[gold.coroutines.generator]`
+* `[gold.smart_ptrs]` - Smart Pointers
 * `[gold.dynamic_library]`
 * `[gold.preview.apps]`
 * `[gold.preview.graphics]`
