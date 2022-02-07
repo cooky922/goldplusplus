@@ -1,6 +1,6 @@
 // <gold/bits/type_traits/type_relationships.hpp> - gold++ library
 
-// Copyright (C) 2021 - present Desmond Gold
+// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
 
 // note: internal header
 
@@ -36,13 +36,13 @@ namespace gold {
     template <typename T, typename... Ts>
     using are_not_same = std::bool_constant<are_not_same_v<T, Ts...>>;
 
-    /// is_any_v
+    /// is_any_of_v
     template <typename T, typename... Ts>
-    inline constexpr bool is_any_v = (std::is_same_v<T, Ts> || ...);
+    inline constexpr bool is_any_of_v = (std::is_same_v<T, Ts> || ...);
 
-    /// is_any
+    /// is_any_of
     template <typename T, typename... Ts>
-    using is_any = std::bool_constant<is_any_v<T, Ts...>>;
+    using is_any_of = std::bool_constant<is_any_of_v<T, Ts...>>;
 
     namespace __detail {
         template <typename From, typename To, typename = void>
