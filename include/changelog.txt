@@ -37,3 +37,4 @@ ADDITIONS SINCE 2022
           swappable
         | fixed 'operator==' and 'operator<=>' for void-containing
           any-like objects
+    | renamed 'gold::is_any[_v]' to 'gold::is_any_of[_v]' on <gold/type_traits> (2/7/2022)
