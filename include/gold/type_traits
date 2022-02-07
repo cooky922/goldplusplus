@@ -42,8 +42,8 @@ namespace gold {
     /// are_same_v
     /// are_not_same
     /// are_not_same_v
-    /// is_any
-    /// is_any_v
+    /// is_any_of
+    /// is_any_of_v
     /// is_specialization_of_v ()
     /// is_narrowing_convertible
     /// is_narrowing_convertible_v
