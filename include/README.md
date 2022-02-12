@@ -2,7 +2,27 @@
 Official Directory
 
 # To-Do:
-## `[gold.concepts]`
+## `[gold.types.basic]`
++ `gold::function_ptr`
++ `gold::function_ref`
+
+```c++
+namespace gold {
+
+  /// function_ptr
+  template <typename T>
+    requires std::is_function_v<T>
+  using function_ptr = T*;
+  
+  /// function_ref
+  template <typename T>
+    requires std::is_function_v<T>
+  using function_ref = T&;
+
+} // namespace gold
+```
+
+## `[gold.types.concepts]`
 + `gold::generic_lambda`
 + `gold::stateless_lambda`
 
