@@ -194,19 +194,43 @@ namespace gold::tuples {
 + `gold::file_handle`
 + `gold::file_descriptor`
 
+```c++
+namespace gold::io {
+
+  /// file_mode
+  enum class file_mode;
+
+  /// file_handle
+  class file_handle;
+  
+  /// file_descriptor
+  class file_descriptor;
+  
+  /// in
+  inline /* unspecified */ in = /* unspecified */;
+  
+  /// out
+  inline /* unspecified */ out = /* unspecified */;
+  
+  /// err
+  inline /* unspecified */ err = /* unspecified */;
+
+} // namespace gold::io
+```
+
 ## `[gold.preview.data]`
 + `gold::image`
 + `gold::bitmap`
 + `gold::audio`
 
 ## `[gold.preview.system]`
-+ `gold::shell`
-+ `gold::process`
-+ `gold::power_status`
-+ `gold::global_memory_status`
-+ `gold::space_info`
-+ `gold::os_info`
-+ `gold::regkey`
++ `gold::sys::shell`
++ `gold::sys::process`
++ `gold::sys::power_status`
++ `gold::sys::global_memory_status`
++ `gold::sys::space_info`
++ `gold::sys::os_info`
++ `gold::sys::regkey`
 
 ## `[gold.preview.apps]`
 + `gold::app`
