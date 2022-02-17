@@ -272,6 +272,66 @@ namespace gold {
 
 } // namespace gold
 ```
+## `[gold.preview.canvas]`
++ `gold::canvas::color`
++ `gold::canvas::color_hex`
++ `gold::canvas::color_rgb`
++ `gold::canvas::color_cmyk`
++ `gold::canvas::color_hsl`
+
+```c++
+namespace gold::canvas {
+
+  /// color_hex
+  using color_hex = /* at least 3 bytes integer */;
+  
+  /// color_rgb
+  struct color_rgb;
+  
+  /// color_cmyk
+  struct color_cmyk;
+  
+  /// color_hsl
+  struct color_hsl;
+  
+  /// color
+  class color {
+   public:
+    static constexpr color from_hex(canvas::color_hex);
+    static constexpr color from_rgb(canvas::color_rgb);
+    static constexpr color from_cmyk(canvas::color_cmyk);
+    static constexpr color from_hsl(canvas::color_hsl);
+    
+    inline static constexpr color red = /* ... */;
+    inline static constexpr color green = /* ... */;
+    /// ... more ...
+    
+    constexpr canvas::color_hex hex() const noexcept;
+    constexpr void hex(canvas::color_hex) noexcept;
+    constexpr canvas::color_rgb rgb() const noexcept;
+    constexpr void rgb(canvas::color_rgb) noexcept;
+    constexpr canvas::color_cmyk cmyk() const noexcept;
+    constexpr void cmyk(canvas::color_cmyk) noexcept;
+    constexpr canvas::color_hsl hsl() const noexcept;
+    constexpr void hsl(canvas::color_hsl) noexcept;
+    
+    enum class filter_mode {
+      brightness, 
+      contrast,
+      hue_rotate,
+      invert,
+      opacity,
+      saturate,
+      sepia
+    };
+    
+    static constexpr color mix(std::initializer_list<color>) noexcept;
+    static constexpr color filter(color, filter_mode, /* unspecified */);
+    static constexpr color color_filter(color, color);
+  };
+
+} // namespace gold::canvas
+```
 
 ## `[gold.preview.graphics]`
 + `gold::graphics`
