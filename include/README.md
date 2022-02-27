@@ -3,21 +3,21 @@ Official Directory
 
 # To-Do:
 ## `[gold.types.basic]`
-+ `gold::function_ptr`
-+ `gold::function_ref`
++ `gold::simple_function_ptr`
++ `gold::simple_function_ref`
 
 ```c++
 namespace gold {
 
-  /// function_ptr
+  /// simple_function_ptr
   template <typename T>
     requires std::is_function_v<T>
-  using function_ptr = T*;
+  using simple_function_ptr = T*;
   
-  /// function_ref
+  /// simple_function_ref
   template <typename T>
     requires std::is_function_v<T>
-  using function_ref = T&;
+  using simple_function_ref = T&;
 
 } // namespace gold
 ```
@@ -52,12 +52,17 @@ namespace gold {
 + `gold::bind_at`
 
 ## `[gold.smart_ptrs]`
-+ `gold::owned_ptr`
++ `gold::stationary_ptr`
++ `gold::unique_ptr`
 + `gold::shared_ptr` (unsynchronized version for compile-time support)
 + `gold::cloned_ptr`
++ `gold::borrowed_ptr`
 
 ```c++
 namespace gold {
+
+  /// bad_pointer_access
+  class bad_pointer_access;
 
   /// default_deleter
   template <typename>
@@ -73,12 +78,19 @@ namespace gold {
   template <typename T>
   class default_cloner<T[]>;
   
-  /// owned_ptr
+  /// stationary_ptr
   template <typename T, typename D = default_deleter<T>>
-  class owned_ptr;
+  class stationary_ptr;
   
-  template <typename T>
-  class owned_ptr<T[]>;
+  template <typename T, typename D>
+  class stationary_ptr<T[], D>;
+  
+  /// unique_ptr
+  template <typename T, typename D = default_deleter<T>>
+  class unique_ptr;
+  
+  template <typename T, typename D>
+  class unique_ptr<T[], D>;
   
   /// shared_ptr
   template <typename T>
@@ -91,20 +103,32 @@ namespace gold {
   template <typename T, typename C = default_cloner<T>, typename D = default_deleter<T>>
   class cloned_ptr;
   
-  template <typename T>
-  class cloned_ptr<T[]>;
+  template <typename T, typename C, typename D>
+  class cloned_ptr<T[], C, D>;
   
-  /// make_owned_ptr
+  /// make_stationary_ptr
   template <typename T, typename... Args>
-  constexpr owned_ptr<T> make_owned_ptr(Args&&...);
+  constexpr stationary_ptr<T> make_stationary_ptr(Args&&...);
   
-  /// make_owned_ptr_for_overwrite
-  template <typename T>
-  constexpr owned_ptr<T> make_owned_ptr_for_overwrite() noexcept;
+  /// make_stationary_ptr_for_overwrite
+  template <typename T, typename... Args>
+  constexpr stationary_ptr<T> make_stationary_ptr_for_overwrite() noexcept;
   
-  /// allocate_owned_ptr
+  /// allocate_stationary_ptr
   template <typename T, typename Alloc, typename... Args>
-  constexpr owned_ptr<T> allocate_owned_ptr(Alloc&, Args&&...);
+  constexpr auto allocate_stationary_ptr(Alloc&, Args&&...);
+  
+  /// make_unique_ptr
+  template <typename T, typename... Args>
+  constexpr unique_ptr<T> make_unique_ptr(Args&&...);
+  
+  /// make_unique_ptr_for_overwrite
+  template <typename T>
+  constexpr unique_ptr<T> make_unique_ptr_for_overwrite() noexcept;
+  
+  /// allocate_unique_ptr
+  template <typename T, typename Alloc, typename... Args>
+  constexpr unique_ptr<T> allocate_unique_ptr(Alloc&, Args&&...);
   
   /// make_shared_ptr
   template <typename T, typename... Args>
@@ -302,10 +326,6 @@ namespace gold::canvas {
     static constexpr color from_cmyk(canvas::color_cmyk);
     static constexpr color from_hsl(canvas::color_hsl);
     
-    inline static constexpr color red = /* ... */;
-    inline static constexpr color green = /* ... */;
-    /// ... more ...
-    
     constexpr canvas::color_hex hex() const noexcept;
     constexpr void hex(canvas::color_hex) noexcept;
     constexpr canvas::color_rgb rgb() const noexcept;
@@ -329,6 +349,16 @@ namespace gold::canvas {
     static constexpr color filter(color, filter_mode, /* unspecified */);
     static constexpr color color_filter(color, color);
   };
+  
+  namespace colors {
+    inline static constexpr color 
+      red = /* ... */,
+      blue = /* ... */,
+      yellow = /* ... */;
+      
+    /// ... more ...
+  
+  } // namespace colors
 
 } // namespace gold::canvas
 ```
