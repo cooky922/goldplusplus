@@ -13,23 +13,23 @@
 * `[gold.format]` - Test Formatting
 * `[gold.io]` - I/O Library
   * `[gold.io.console]` - Console API
-* `[gold.value_sequence]`
-* `[gold.type_sequence]`
-* `[gold.tuples]` - Tuple Utilities
 * `[gold.types]` - Types Library
   * `[gold.types.basic]` - type aliases
   * `[gold.types.name]` - readable type information
   * `[gold.types.traits]` - type traits
   * `[gold.types.invocable_traits]` - invocable type traits
   * `[gold.types.concepts]` - basic type concepts
+  * `[gold.types.sequence]` - type sequence
 * `[gold.utility]` - General Purpose Utilities
   * `[gold.utility.ops]`
   * `[gold.utility.scope_guard]`
+  * `[gold.utility.tuple]` - tuple and other tuple-related utilities
   * `[gold.utility.any]` - type-safe type-erased type
   * `[gold.utility.expected]` - alternative to exceptions
   * `[gold.utility.vocabulary]` - vocabulary types
   * `[gold.utility.demangling]` - demangling using Itanium ABI
   * `[gold.utility.pack]` - Parameter Pack Algorithms
+  * `[gold.utility.value_sequence]` - Value Sequence
 * `[gold.functional]` - Functional-Programming Library
 * `[gold.diagnostic]` - Diagnostic Library
   * `[gold.diagnostic.assertion]`
@@ -39,10 +39,12 @@
   * `[gold.math.numbers]` - Mathematical Constants and Number Traits
   * `[gold.math.math_int]` - Integer Arithmetic
   * `[gold.math.random]` - Random Generation
+  * `[gold.math.ratio]` - Compile-time Ratio
 * `[gold.ranges]` - Generalized Ranges and Iterators Library
   * `[gold.ranges.iterators]` - Iterators
 * `[gold.coroutines]` - Coroutine Library
-  * `[gold.coroutines.traits]`
+  * `[gold.coroutines.traits]` - Coroutine Traits and other Awaitable Concepts
+  * `[gold.coroutines.lazy]` - Lazy Evaluated Function
   * `[gold.coroutines.task]`
   * `[gold.coroutines.generator]`
 * `[gold.smart_ptrs]` - Smart Pointers
