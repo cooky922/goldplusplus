@@ -157,6 +157,65 @@ namespace gold {
 } // namespace gold
 ```
 
+## `[gold.type_sequence]`
+```c++
+namespace gold {
+
+    /// namespace types
+    namespace types {
+
+        /// index_token_t
+        template <std::size_t I>
+        struct index_token_t;
+
+        template <std::size_t I>
+        inline constexpr index_token_t<I> index_token {};
+
+        /// sentinel_token_t
+        struct sentinel_token_t;
+
+        /// sentinel_token
+        inline constexpr sentinel_token_t sentinel_token {};
+
+        /// sequence_t
+        template <typename...>
+        struct sequence_t;
+
+        template <typename... Ts>
+        struct sequence_t<Ts...>;
+
+        template <>
+        struct sequence_t<>;
+
+        /// sequence
+        template <typename... Ts>
+        inline constexpr sequence_t<Ts...> sequence {};
+
+        /// null_sequence_t
+        using null_sequence_t = sequence_t<>;
+
+        /// null_sequence
+        inline constexpr null_sequence_t null_sequence {};
+
+    } // namespace types
+
+    /// type_sequence_t
+    template <typename... Ts>
+    using type_sequence_t = types::sequence_t<Ts...>;
+
+    /// type_sequence
+    template <typename... Ts>
+    inline constexpr auto type_sequence = types::sequence<Ts...>;
+    
+    /// null_type_sequence_t
+    using null_type_sequence_t = types::null_sequence_t;
+    
+    /// null_type_sequence
+    inline constexpr auto null_type_sequence = types::null_sequence;
+
+} // namespace gold
+```
+
 ## `[gold.tuples]`
 + `gold::tuples::get`
 + `gold::tuples::apply`
@@ -198,6 +257,7 @@ namespace gold::tuples {
 + `gold::invocable_generator`
 + `gold::state_generator`
 + revamp `gold::task`
++ `gold::lazy`
 
 ## `[gold.containers]`
 + `gold::fixed_string`
