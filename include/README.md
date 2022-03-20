@@ -22,20 +22,58 @@ namespace gold {
 } // namespace gold
 ```
 
+## `[gold.util.function_view]`
++ `gold::function_view`
+
+```c++
+namespace gold {
+ 
+  /// function_view
+  template <typename...>
+  class function_view;
+  
+  template <typename R, typename... Args>
+  class function_view<R(Args...) /* cv */ /* ref */ noexcept(/* is-noexcept */)>;
+  
+  template <typename R, typename... Args>
+  class function_view<R(Args......) /* cv */ /* ref */ noexcept(/* is-noexcept */)>;
+
+} // namespace gold
+```
+
 ## `[gold.types.concepts]`
-+ `gold::generic_lambda`
-+ `gold::stateless_lambda`
++ Trivial Operation Concepts
 
 ```c++
 namespace gold {
 
-  /// generic_lambda
+  /// trivial_type
   template <typename T>
-  concept generic_lambda = lambda<T> && !requires { &T::operator(); };
+  concept trivial_type = /* see description */;
   
-  /// stateless_lambda
+  /// trivially_constructible_from
+  template <typename T, typename... Args>
+  concept trivially_constructible_from = /* see description */;
+  
+  /// trivially_copy_constructible
   template <typename T>
-  concept stateless_lambda = lambda<T> && std::default_initializable<T>;
+  concept trivially_copy_constructible = /* see description */;
+  
+  /// trivially_move_constructible
+  template <typename T>
+  concept trivially_move_constructible = /* see description */;
+  
+  /// trivially_destructible
+  template <typename T>
+  concept trivially_destructible = /* see description */;
+  
+  /// trivially_copyable
+  template <typename T>
+  concept trivially_copyable = /* see description */;
+  
+  /// bit_convertible_to
+  template <typename From, typename To>
+  concept bit_convertible_to = /* see description */;
   
 } // namespace gold
 ```
@@ -157,7 +195,7 @@ namespace gold {
 } // namespace gold
 ```
 
-## `[gold.type_sequence]`
+## `[gold.types.sequence]`
 ```c++
 namespace gold {
 
@@ -216,7 +254,10 @@ namespace gold {
 } // namespace gold
 ```
 
-## `[gold.tuples]`
+## `[gold.types.movable_tuple]`
++ `gold::movable_tuple` - implemented using lambda expressions
+
+## `[gold.type.tuples]`
 + `gold::tuples::get`
 + `gold::tuples::apply`
 + `gold::tuples::apply_each`
@@ -253,10 +294,16 @@ namespace gold::tuples {
 ```
 
 ## `[gold.coroutines]`
+
+### `[gold.coroutines.generator]`
 + revamp `gold::generator`
 + `gold::invocable_generator`
 + `gold::state_generator`
+
+### `[gold.coroutines.task]`
 + revamp `gold::task`
+
+### `[gold.coroutines.lazy]`
 + `gold::lazy`
 
 ## `[gold.containers]`
@@ -275,31 +322,137 @@ namespace gold::tuples {
 + `gold::lazy_ranges::continue_with`
 
 ## `[gold.preview.io]`
-+ `gold::file_handle`
-+ `gold::file_descriptor`
 
+### `[gold.preview.io.file]`
 ```c++
 namespace gold::io {
 
-  /// file_mode
-  enum class file_mode;
+  /// file_descriptor
+  enum class file_descriptor {};
 
+  /// open_mode
+  class open_mode {
+   public:
+    enum class /* unspecified */ {
+      read, write, append, binary, extended
+    };
+    using enum /* unspecified */;
+
+    constexpr static open_mode from_string(std::string_view) noexcept;
+    constexpr std::string_view to_string() const noexcept;
+  };
+
+  /// seek_mode
+  enum class seek_mode {
+    begin,
+    current,
+    end
+  };
+
+  /// file_pos
+  class file_pos;
+  
+  //// Low-Level and General File Handle
   /// file_handle
   class file_handle;
-  
-  /// file_descriptor
-  class file_descriptor;
-  
-  /// in
-  inline /* unspecified */ in = /* unspecified */;
-  
-  /// out
-  inline /* unspecified */ out = /* unspecified */;
-  
-  /// err
-  inline /* unspecified */ err = /* unspecified */;
+
+  /// static_file_handle
+  class static_file_handle : public file_handle;
+
+  //// File Handle Objects
+  inline static_file_handle in = /* unspecified */;
+  inline static_file_handle out = /* unspecified */;
+  inline static_file_handle err = /* unspecified */;
+
+  //// Interoperability with C++ Standard Library I/O
+  file_handle from_fstream(const std::fstream&);
+  file_handle from_fstream(const std::ofstream&);
+  file_handle from_fstream(const std::ifstream&);
 
 } // namespace gold::io
+```
+
+### `[gold.preview.io.stream]`
+```c++
+namespace gold::io {
+
+  //// Stream Based Operations
+  /// stream_base
+  struct stream_base;
+
+  /// file_stream
+  class file_stream : public stream_base;
+
+  /// memory_stream
+  class memory_stream : public stream_base;
+
+  //// Stream Writer / Reader Operations
+  /// text_writer
+  class text_writer; 
+
+  /// text_reader
+  class text_reader;
+
+  /// binary_writer
+  class binary_writer;
+
+  /// binary_reader
+  class binary_reader;
+
+} // namespace gold::io
+```
+
+### `[gold.preview.io.fs]`
+```c++
+namespace gold::io::fs {
+
+  /// filesystem_error
+  class filesystem_error;
+
+  /// file_status
+  class file_status;	
+
+  /// permission_kind
+  enum class permission_kind;
+
+  /// set_permission_options
+  enum class set_permission_options;
+
+  /// space_info
+  class space_info;
+
+  /// file_kind
+  enum class file_kind {
+    none,
+    not_found,
+    regular,
+    directory,
+    symlink,
+    block,
+    character,
+    fifo,
+    socket,
+    unknown
+  };
+  
+  /// copy_options
+  enum class copy_options;
+
+  /// path
+  class path;
+
+  /// file_entry
+  class file_entry;
+
+  /// directory_entry
+  class directory_entry;
+
+  /// socket_entry
+  class socket_entry;
+
+} // namespace gold::io::fs
+
+namespace gold { namespace fs = namespace io::fs; }
 ```
 
 ## `[gold.preview.data]`
