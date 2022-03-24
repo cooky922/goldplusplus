@@ -455,6 +455,96 @@ namespace gold::io::fs {
 namespace gold { namespace fs = namespace io::fs; }
 ```
 
+## `[gold.preview.concurrent]`
+### `[gold.preview.concurrent.thread]`
+```c++
+namespace gold {
+  
+  /// thread_status
+  enum class thread_status;
+  
+  /// stop_source
+  class stop_source;
+  
+  /// stop_token
+  class stop_token;
+  
+  /// thread
+  class thread {
+   public:
+    /// creation
+    thread() noexcept = default;
+    thread(const thread&) = delete;
+    thread(thread&&) noexcept;
+    thread& operator=(const thread&) = delete;
+    thread& operator=(thread&&);
+    ~thread();
+    
+    template <typename F, typename... Args>
+    static thread spawn(F&&, Args&&...);
+    
+    template <typename F, typename... Args>
+    static thread named_spawn(std::string_view, F&&, Args&&...);
+    
+    /// types
+    class id;
+    using native_handle_type = /* implementation defined */;
+    
+    /// observers
+    static std::size_t hardware_concurrency() noexcept;
+    id get_id() const noexcept;
+    
+    void name(std::string_view);
+    std::string name() const noexcept;
+    
+    static thread& get_thread_by_name(std::string_view);
+    
+    thread_status status() const noexcept;
+    
+    /// current thread
+    class current {
+     public:
+      static thread& get_thread();
+      void yield_now() noexcept;
+      void sleep_for(const gold::chrono::qualified_duration auto&);
+      void sleep_until(const gold::chrono::qualified_time_point auto&);
+      id get_id() noexcept;
+      
+      void name(std::string_view);
+      std::string name() const noexcept;
+    };
+    
+    /// operations
+    void join();
+    void detach();
+    bool joinable() const noexcept;
+    
+    stop_source get_stop_source();
+    stop_token get_stop_token();
+    bool request_stop();
+  };
+  
+  /// lazy_thread
+  class lazy_thread;
+  
+}
+```
+
+### `[gold.preview.concurrent.sync]`
+```c++
+namespace gold {
+
+  /// synced
+  template <typename T>
+  class synced;
+  
+  /// channel
+  template <typename Ref, typename Value = /* ... */>
+  class channel;
+
+} // namespace gold
+```
+
 ## `[gold.preview.data]`
 + `gold::image`
 + `gold::bitmap`
