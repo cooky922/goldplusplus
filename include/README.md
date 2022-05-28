@@ -22,21 +22,32 @@ namespace gold {
 } // namespace gold
 ```
 
-## `[gold.util.function_view]`
-+ `gold::function_view`
+## `[gold.functional.functions]`
++ `gold::function` - `constexpr`-compatible `std::function`
++ `gold::unique_function` - `constexpr`-compatible `std::move_only_function`
 
 ```c++
 namespace gold {
  
-  /// function_view
+  /// function
   template <typename...>
-  class function_view;
+  class function;
   
   template <typename R, typename... Args>
-  class function_view<R(Args...) /* cv */ /* ref */ noexcept(/* is-noexcept */)>;
+  class function<R(Args...) /* cv */ /* ref */ noexcept(/* is-noexcept */)>;
   
   template <typename R, typename... Args>
-  class function_view<R(Args......) /* cv */ /* ref */ noexcept(/* is-noexcept */)>;
+  class function<R(Args......) /* cv */ /* ref */ noexcept(/* is-noexcept */)>;
+  
+  /// unique_function
+  template <typename...>
+  class unique_function;
+  
+  template <typename R, typename... Args>
+  class unique_function<R(Args...) /* cv */ /* ref */ noexcept(/* is-noexcept */)>;
+  
+  template <typename R, typename... Args>
+  class unique_function<R(Args......) /* cv */ /* ref */ noexcept(/* is-noexcept */)>;
 
 } // namespace gold
 ```
@@ -74,6 +85,10 @@ namespace gold {
   /// bit_convertible_to
   template <typename From, typename To>
   concept bit_convertible_to = /* see description */;
+  
+  /// invocable_r
+  template <typename R, typename F, typename... Args>
+  concept invocable_r = std::is_invocable_r_v<R, F, Args...> && std::convertible_to<std::invoke_result_t<F, Args...>, R>;
   
 } // namespace gold
 ```
@@ -195,7 +210,10 @@ namespace gold {
 } // namespace gold
 ```
 
-## `[gold.types.sequence]`
+## `[gold.sequence.values]`
++ `gold::value_sequence` - as base class
+
+## `[gold.sequence.types]`
 ```c++
 namespace gold {
 
@@ -258,15 +276,43 @@ namespace gold {
 + `gold::movable_tuple` - implemented using lambda expressions
 
 ## `[gold.type.tuples]`
++ `gold::tuples::gettable_at`
++ `gold::tuples::tuple_size[_v]`
++ `gold::tuples::tuple_element[_t]`
 + `gold::tuples::get`
 + `gold::tuples::apply`
++ `gold::tuples::apply_result[_t]`
 + `gold::tuples::apply_each`
 + `gold::tuples::apply_each_n`
 + `gold::tuples::zip`
 + `gold::tuples::unzip`
++ `gold::tuples::concat`
 
 ```c++
+
 namespace gold::tuples {
+
+  // gettable_at
+  template <typename, std::size_t>
+  concept gettable_at = /* see description */
+  
+  // tuple_size
+  template <typename T>
+  struct tuple_size;
+  
+  // tuple_size_v
+  template <typename T>
+    requires requires { tuple_size<T>::value; }
+  inline constexpr std::size_t tuple_size_v = tuple_size<T>::value;
+  
+  // tuple_element
+  template <typename T, std::size_t I>
+  struct tuple_element;
+  
+  // tuple_element_t
+  template <typename T, std::size_t I>
+    requires requires { typename tuple_element<T, I>::type; }
+  using tuple_element_t = tuple_element<T, I>::type;
 
   inline namespace /* unspecified */ {
     // get
@@ -288,6 +334,21 @@ namespace gold::tuples {
     // apply_each_n
     template <std::size_t>
     inline constexpr /* unspecified */ apply_each_n = /* unspecified */;
+  }
+  
+  inline namespace /* unspecified */ {
+    // zip
+    inline constexpr /* unspecified */ zip = /* unspecified */;
+  }
+  
+  inline namespace /* unspecified */ {
+    // unzip
+    inline constexpr /* unspecified */ unzip = /* unspecified */;
+  }
+  
+  inline namespace /* unspecified */ {
+    // concat
+    inline constexpr /* unspecified */ concat = /* unspecified */;
   }
 
 } // namespace gold::tuples
