@@ -1,4 +1,7 @@
 ADDITIONS SINCE 2022
+==========================
+    | JANUARY 2022
+    =======================================================
     | from <gold/utility> add 'gold::forward_like' (1/1/2022)
     | add <gold/expected> (1/2/2022)
     | from <gold/functional> add 'gold::consteval_invoke[_r]' (1/15/2022)
@@ -27,9 +30,11 @@ ADDITIONS SINCE 2022
         | replaced 'gold::bad_any_cast' with 'gold::bad_any_access'
         | support for 'operator==' and 'operator<=>' for both any-types
     | removed <gold/property> (1/30/2022)
+    | FEBRUARY 2022
+    ============================================================
     | improved 'gold::void_like' (2/1/2022)
         | added 'gold::void_like_v'
-        | added call operator
+        | added member function 'operator()'
     | fixed bugs on <gold/any> (2/1/2022)
         | fixed 'gold::__any::basic_any_handler::s_swap_'
           where non-consteval branch invokes 'swap'
@@ -38,3 +43,206 @@ ADDITIONS SINCE 2022
         | fixed 'operator==' and 'operator<=>' for void-containing
           any-like objects
     | renamed 'gold::is_any[_v]' to 'gold::is_any_of[_v]' on <gold/type_traits> (2/7/2022)
+    | added 'gold::float80_t' on <gold/basic_types> (2/15/2022)
+    | added on <gold/basic_types>: (2/16/2022)
+        | 'gold::intmax_t'
+        | 'gold::uintmax_t'
+        | 'gold::floatmax_t'
+    | added <gold/char_class> (2/19/2022)
+    | revised <gold/random> (2/19/2022)
+        | added 'engine_result_type' member type
+        | make member type 'default_seeder_type' public
+        | added 'closure_generate', 'closure_next_int', 'closure_next_real'
+          as synonymouse to 'generate_l', 'next_int_l', 'next_real_l'
+          respectively
+    | added <gold/bits/unreachable.hpp> (2/19/2022)
+        | moving 'gold::unreachable' from <gold/utility> to this header
+    | added <gold/bits/to_integer.hpp> (2/19/2022)
+    | added <gold/ratio> (2/22/2022)
+    | <gold/dynamic_library> changes (2/23/2022)
+        | optimize implementation
+            | renamed 'gold::dynamic_library' to 'gold::dl_module'
+            | renamed 'gold::dl_symbol::address_to' to 'gold::dl_symbol::to_address'
+            | changed some of 'gold::dl_module' method return types:
+                | 'gold::dl_module::name' ('std::string' to 'std::string_view')
+                | 'gold::dl_module::module_name' ('std::string' to 'std::string_view')
+                | 'gold::dl_module::image_name' ('std::string' to 'std::string_view')
+                | 'gold::dl_module::symbol_names' ('std::vector<std::string>' to 'std::span<const std::string>')
+                | 'gold::dl_module::symbols' ('std::vector<gold::dl_symbol>' to 'std::span<gold::dl_symbol>')
+            | changed the implementation scheme of 'gold::dl_module'
+                | changed the member data
+            | renamed 'gold::dl_module::symbol_as' to 'gold::dl_module::entity'
+            | renamed 'gold::dl_module::symbol_as_if' to 'gold::dl_module::entity_ptr'
+            | renamed 'gold::dl_module::invoke_symbol' to 'gold::dl_module::entity_invoke'
+            | added 'gold::dl_module::swap' member and friend
+            | renamed 'gold::dl_module::has_loaded' to 'gold::dl_module::has_value'
+    | added <gold/coroutine> (2/23/2022)
+    | MARCH 2022
+    | ==========================================
+    | added <gold/stacktrace> (3/2/2022)
+    | added 'gold::generic_lambda' and 'gold::stateless_lambda' on <gold/concepts> (3/5/2022)
+    | reimplemented 'gold::system_assert' with compile-time friendly error msg on <gold/assertion> (3/5/2022)
+    | added on <gold/numbers> (3/5/2022)
+        | 'gold::numbers::inv_phi_v'
+        | 'gold::numbers::inv_phi'
+    | added on <gold/type_traits> (3/6/2022)
+        | 'gold::invoke_class_template[_t]'
+    | added 'gold::allocator_of' on <gold/concepts> (3/10/2022)
+    | added <gold/bits/memory/ops.hpp> (3/18/2022)
+        | 'gold::construct_at'
+        | 'gold::relocate_at'
+        | 'gold::destroy_at'
+    | added <gold/ctype_info> (3/18/2022)
+        | 'gold::ctype_info'
+        | 'gold::ctype_id'
+    | added member function 'ctype_info' on 'gold::any' and 'gold::unique_any' <gold/any> (3/18/2022)
+        | adjusted implementation by using 'gold::ctype_info' as uniform type-info
+    | added static member function 'unique_id' on 'gold::ctype_info' <gold/ctype_info> (3/21/2022)
+    | APRIL 2022
+    | ==================================
+    | added <gold/clipboard> (4/7/2022)
+    | tweaks on <gold/char_class> (4/8/2022)
+        | renamed original class template gold::char_class to gold::basic_char_class
+        | added type alias gold::char_class
+        | added type alias gold::wchar_class
+    | tweaks on <gold/utility> (4/10/2022)
+        | deprecated gold::unmove
+        | deprecated gold::unforward
+        | added gold::as_mutable
+        | declared [[gnu::always_inline]]
+            | gold::to_signed
+            | gold::to_unsigned
+            | gold::as_consteval
+            | gold::decay_copy
+            | gold::decay_move
+            | gold::forward_like
+            | gold::discard_unused
+    | major revamp on <gold/any> (4/10/2022)
+        | added gold::view_any
+        | tweaked implementations
+            | both gold::any and gold::unique_any will no long have old 'type_info' member
+            | both gold::any and gold::unique_any will have 'view' member
+            | deleted gold::maybe_any_cast variants
+        | unifying gold::any_cast as CPO
+        | unifying gold::holds_current_type as CPO
+    | minor tweaks on <gold/ctype_info> (4/11/2022)
+        | changed gold::ctype_info::unique_id
+            | from function template to function object
+                | to "prevent" from using its
+                  template argument directly
+    | minor changes on <gold/type_traits> (4/12/2022)
+        | added gold::decay[_t]
+        | added gold::size_constant_v
+    | minor changes on <gold/utility> (4/12/2022)
+        | divided cast-section into <gold/bits/casts.hpp>
+    | minor tweaks on <gold/any> (4/12/2022)
+        | fixed gold::any_cast CPO overloads
+        | fixed temporary gold::any in gold::any_cast returning a copy
+            | that should supposedly be reference since it refers
+              to somebody
+        | fixed self-assignment with null-manager
+        | gold::view_any supports referencing to arrays
+        | explicitly deleting overload for gold::view_any ctor
+          taking reference to functions
+            | but taking reference to function pointers is allowed!
+    | changes on <gold/basic_types> (4/13/2022)
+        | removed gold::native_handle_t
+            | reason: no use
+        | added new types and aliases:
+            | gold::qword_t
+            | gold::decimal32_t
+            | gold::decimal64_t
+            | gold::decimal128_t
+            | gold::decimalmax_t
+            | gold::[b|d]float[16|32|64|128]_t
+    | changes on <gold/basic_types> (4/15/2022)
+        | added new alias:
+            | gold::bfloat80_t
+    | minor fix on <gold/console> (4/20/2022)
+        | fixed gold::console_type::native_handle_typestr
+            | assign from 'void*' instead of
+              undeclared 'gold::native_handle_t'
+    | MAY 2022
+    | =========================
+    | new additions on <gold/concepts> (5/3/2022)
+        | gold::relocatable [defined in <gold/bits/concepts/types.hpp>]
+        | gold::layout_compatible_with [defined in <gold/bits/concepts/types.hpp>]
+    | added new header <gold/bits/memory/ops_algo.hpp> (5/3/2022)
+        | gold::iter_construct_at
+        | gold::iter_destroy_at
+        | gold::iter_relocate_at
+        | gold::destroy[_n]
+        | gold::uninit_default_construct[_n]
+        | gold::uninit_fill[_n]
+        | gold::uninit_copy[_n][_result]
+        | gold::uninit_move[_n][_result]
+        | gold::uninit_relocate[_n][_result]
+    | added new header <gold/memory> (5/6/2022)
+        | consists of bits headers:
+            | <gold/bits/memory/voidify.hpp>
+                | modify the implementation,
+                  deleted overload for 'const T&&'
+            | <gold/bits/memory/ops.hpp>
+            | <gold/bits/memory/ops_algo.hpp>
+    | cleanups (5/7/2022)
+        | <gold/pack>
+            | internal name renaming
+        | <gold/bits/type_traits/detection.hpp>
+            | internal name renaming
+        | <gold/clipboard>
+            | changed gold::clipboard_error's
+              member name type to 'const char*'
+              from 'std::string_view'
+        | <gold/bit>
+            | tweaked the definition of concept
+              'gold::__bit::trivially_copyable'
+        | removed <gold/bits/demangling.hpp>
+            | moved the content to <gold/demangling>
+        | <gold/type_name>
+            | moved <gold/bits/typeof/runtime_typeof.hpp>
+                 to <gold/bits/type_name/type_name_r.hpp>
+            | moved <gold/bits/typeof/compile_typeof.hpp>
+                 to <gold/bits/type_name/type_name_c.hpp>
+            | internal name renaming
+        | <gold/concepts>
+            | internal name renaming
+                | <gold/bits/concepts/lambda.hpp>
+        | <gold/random>
+            | renamed 'gold::random_number_generator'
+                   to 'gold::basic_random_generator'
+            | added 'gold::default_random_generator'
+            | replaced 'gold::random' object of type
+              with 'gold::defualt_random_generator'
+            | simplify 'gold::random_generator::choose'
+                | the return type is 'decltype(auto)'
+                    | for sized ranges overload
+        | <gold/struct_array>
+            | changed 'fs' string literal to 'consteval' from
+              'constexpr' modifier
+    | new type aliases on <gold/basic_types> (5/7/2022)
+        | new gold::intmin_t
+        | new gold::uintmin_t
+        | new gold::floatmin_t
+        | new gold::decimalmin_t
+        | new gold::bfloatmin_t
+        | new gold::dfloatmin_t
+    | added 'gold::non_type[_t]' on <gold/utility> (5/24/2022)
+        | on <gold/bits/non_type.hpp> internally
+    | added new internal header <gold/bits/discard_unused.hpp> (5/24/2022)
+        | gold::discard_unused resides here
+    | added new header <gold/functions> (5/24/2022)
+        | gold::function_view
+    | missing features on gold::function_view from <gold/functions> (5/25/2022)
+        | added deduction guide for gold::function_view
+        | added gold::function_view constructor overload
+          taking gold::non_type_t and the state
+    | added 'gold::is_template_instantiation[_v]' on <gold/type_traits> (5/25/2022)
+        | on <gold/bits/type_traits/template_instantiation.hpp> internally
+    | added 'gold::decayable' concept on <gold/concepts> (5/26/2022)
+        | on <gold/bits/concepts/types.hpp> internally
+    | fixed 'gold::decay_t' on <gold/type_traits> (5/26/2022)
+        | fixed the problem where it rejects the types
+          that are neither copy nor move constructible
+    | replacing 'gold::decay_t' with 'std::decay_t' on (5/26/2022)
+        | <gold/bits/any/any.hpp>
+        | <gold/bits/any/unique_any.hpp>
