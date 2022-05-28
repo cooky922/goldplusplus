@@ -72,7 +72,6 @@ namespace gold {
         return __functional::overload { __functional::maybe_wrap_function(std::forward<Fs>(fs)) ... };
     }
 
-
 } // namespace gold
 
 #endif // __GOLD_BITS_FUNCTIONAL_OVERLOAD_HPP
