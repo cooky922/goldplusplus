@@ -3,9 +3,12 @@
 #include <gold/console>
 #include <windows.h>
 
-namespace {
-    inline static constinit char __gold_win32_console_title_buffer [gold::console_type::max_title_size()] {};
-}
+namespace __goldx {
+
+    /// __goldx::console_title_buffer
+    inline static constinit char console_title_buffer [gold::console_type::max_title_size()] {};
+
+} // namespace __goldx
 
 namespace gold {
 
@@ -203,8 +206,8 @@ namespace gold {
 
     /// console_type::title
     std::string_view console_type::title() {
-        ::GetConsoleTitle(__gold_win32_console_title_buffer, max_title_size());
-        return std::string_view(__gold_win32_console_title_buffer, __builtin_strlen(__gold_win32_console_title_buffer));
+        ::GetConsoleTitle(__goldx::console_title_buffer, max_title_size());
+        return std::string_view(__goldx::console_title_buffer, __builtin_strlen(__goldx::console_title_buffer));
     }
 
     console_type& console_type::title(std::string_view sv) {

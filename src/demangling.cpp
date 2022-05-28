@@ -1,4 +1,4 @@
-#include <gold/bits/demangling.hpp>
+#include <gold/demangling>
 #include <cstdlib>
 #include <memory>
 #include <cxxabi.h>
