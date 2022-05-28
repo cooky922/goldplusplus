@@ -13,30 +13,35 @@
 
 namespace gold::__pack {
 
+    /// __pack::indexed
     template <std::size_t, typename T>
-    struct indexed_ { using type = T; };
+    struct indexed { using type = T; };
 
+    /// __pack::indexer
     template <typename, typename...>
-    struct indexer_;
+    struct indexer;
 
     template <std::size_t... Is, typename... Ts>
-    struct indexer_<std::index_sequence<Is...>, Ts...>
-    : indexed_<Is, Ts> ... {};
+    struct indexer<std::index_sequence<Is...>, Ts...>
+    : indexed<Is, Ts> ... {};
 
+    /// __pack::select_arg [for uneval context]
     template <std::size_t I, typename T>
-    auto select_(const indexed_<I, T>&) -> indexed_<I, T>;
+    auto select_arg(const indexed<I, T>&) -> indexed<I, T>;
 
+    /// __pack::at_back_impl
     template <typename... Ts>
-    struct pack_at_back_impl_ {
+    struct at_back_impl {
         using type = typename decltype((std::type_identity<Ts>{}, ...))::type;
     };
 
+    /// __pack::at_front_impl
     template <typename... Ts>
-    struct pack_at_front_impl_ {
+    struct at_front_impl {
         using type = typename decltype((..., std::type_identity<Ts>{}))::type;
     };
 
-    /// get_at_impl
+    /// __pack::get_at_impl
     template <typename>
     struct get_at_impl;
 
@@ -44,14 +49,10 @@ namespace gold::__pack {
     struct get_at_impl<std::index_sequence<Is...>> {
 
         template <typename Arg>
-        static constexpr decltype(auto) at(decltype((Is, void_like{})) ..., Arg&& arg, ...) {
+        static constexpr decltype(auto) at(decltype((Is, gold::void_like{})) ..., Arg&& arg, ...) noexcept {
             return std::forward<Arg>(arg);
         }
 
-        template <typename Arg>
-        constexpr decltype(auto) operator()(decltype((Is, void_like{})) ..., Arg&& arg, ...) {
-            return std::forward<Arg>(arg);
-        }
     };
 
 } // namespace gold::__pack

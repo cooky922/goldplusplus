@@ -10,6 +10,9 @@
 
 #include <string_view>
 #include <array>
+#include <stdexcept>
+#include <bits/stl_construct.h>
+#include <bits/stl_algo.h>
 #include <bits/ranges_algo.h>
 
 #include <gold/bits/concepts/types.hpp>
@@ -42,7 +45,7 @@ namespace gold {
             /// 'std::ranges::fill_n' may not be used in 'constexpr'
             /// because '__builtin_memset' is not a constant expression
             for (std::size_t i = 0; i < N; ++i)
-                m_data_[i] = T{};
+                std::construct_at(&m_data_[i]);
         }
 
         constexpr struct_array(const value_type(&arg)[N]) noexcept {

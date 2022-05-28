@@ -32,7 +32,7 @@ namespace gold {
         constexpr extent_t(std::size_t n)
         : value(n), dynamic(false) {}
 
-        constexpr bool operator==(const extent_t&) const noexcept = default;
+        friend constexpr bool operator==(extent_t, extent_t) noexcept = default;
     };
 
 
