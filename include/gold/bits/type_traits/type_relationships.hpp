@@ -1,6 +1,6 @@
 // <gold/bits/type_traits/type_relationships.hpp> - gold++ library
 
-// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+// Copyright (C) 2021 - present Desmond Gold
 
 // note: internal header
 

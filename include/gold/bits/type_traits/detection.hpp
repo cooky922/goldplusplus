@@ -12,50 +12,57 @@
 
 namespace gold {
 
-    namespace __detail {
+    namespace __type_trait {
 
-        // detector_
-        template <typename DefaultT, typename AlwaysVoid,
-                  template <typename...> typename Op, typename... Args>
-        struct detector_ {
+        /// __type_trait::detector
+        template <typename DefaultT,
+                  typename AlwaysVoid,
+                  template <typename...> typename Op,
+                  typename... Args>
+        struct detector {
             using value_t = std::false_type;
             using type    = DefaultT;
         };
 
-        template <typename DefaultT, template <typename...> typename Op,
+        template <typename DefaultT,
+                  template <typename...> typename Op,
                   typename... Args>
-        struct detector_<DefaultT, std::void_t<Op<Args...>>, Op, Args...> {
+        struct detector<DefaultT, std::void_t<Op<Args...>>, Op, Args...> {
             using value_t = std::true_type;
             using type    = Op<Args...>;
         };
 
-        // nonesuch_
         #pragma GCC diagnostic push
         #pragma GCC diagnostic ignored "-Wctor-dtor-privacy"
-        struct nonesuchbase_ {};
-        struct nonesuch_ : private nonesuchbase_ {
-            ~nonesuch_() = delete;
-            nonesuch_(const nonesuch_&) = delete;
-            void operator=(const nonesuch_&) = delete;
+        /// __type_trait::none_such_base
+        struct none_such_base {};
+
+        /// __type_trait::none_such
+        struct none_such : private none_such_base {
+            ~none_such() = delete;
+            none_such(const none_such&) = delete;
+            none_such& operator=(const none_such&) = delete;
         };
         #pragma GCC diagnostic pop
 
-        // detected_or_
-        template <typename DefaultT, template <typename...> typename Op,
+        /// __type_trait::detected_or
+        template <typename DefaultT,
+                  template <typename...> typename Op,
                   typename... Args>
-        using detected_or_ = detector_<DefaultT, void, Op, Args...>;
+        using detected_or = detector<DefaultT, void, Op, Args...>;
 
-        // detected_or_t_
-        template <typename DefaultT, template <typename...> typename Op,
+        /// __type_trait::detected_or_t
+        template <typename DefaultT,
+                  template <typename...> typename Op,
                   typename... Args>
-        using detected_or_t_ = typename detected_or_<DefaultT, Op, Args...>::type;
+        using detected_or_t = typename detected_or<DefaultT, Op, Args...>::type;
 
-    } // namespace __detail
+    } // namespace __type_trait
 
     /// is_detected
     template <template <typename...> typename Op, typename... Args>
     using is_detected
-    = typename __detail::detector_<__detail::nonesuch_, void, Op, Args...>::value_t;
+    = typename __type_trait::detector<__type_trait::none_such, void, Op, Args...>::value_t;
 
     /// is_detected_v
     template <template <typename...> typename Op, typename... Args>
@@ -64,12 +71,12 @@ namespace gold {
     /// detected_t
     template <template <typename...> typename Op, typename... Args>
     using detected_t
-    = typename __detail::detector_<__detail::nonesuch_, void, Op, Args...>::type;
+    = typename __type_trait::detector<__type_trait::none_such, void, Op, Args...>::type;
 
     /// detected_or
     template <typename DefaultT, template <typename...> typename Op,
               typename... Args>
-    using detected_or = __detail::detected_or_<DefaultT, Op, Args...>;
+    using detected_or = __type_trait::detected_or<DefaultT, Op, Args...>;
 
     /// detected_or_t
     template <typename DefaultT, template <typename...> typename Op,

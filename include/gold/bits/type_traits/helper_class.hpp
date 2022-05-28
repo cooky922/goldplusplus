@@ -23,6 +23,10 @@ namespace gold {
     template <std::size_t N>
     using size_constant = std::integral_constant<std::size_t, N>;
 
+    /// size_constant_v
+    template <std::size_t N>
+    inline constexpr size_constant<N> size_constant_v {};
+
     /// index_constant
     template <std::size_t N>
     using index_constant = std::integral_constant<std::size_t, N>;

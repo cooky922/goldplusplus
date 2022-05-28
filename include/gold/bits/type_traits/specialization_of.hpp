@@ -60,7 +60,7 @@ namespace gold {
         template <template <template <auto...> typename...> typename Temp, template <auto...> typename... Tps>
         inline constexpr bool is_spec_of_tpv_v<Temp<Tps...>, Temp> = true;
 
-        //// ADD MORE SPECIALIZATIONS AS YOU CAN!!
+        //// ADD MORE SPECIALIZATIONS AS MUCH AS YOU CAN!!
 
 
     } // namespace __type_trait
@@ -76,12 +76,12 @@ namespace gold {
         return __type_trait::is_spec_of_vals_v<T, Temp>;
     }
 
-    template <typename T, template <typename, auto...> typename Temp>
+    template <typename T, template <typename, auto, auto...> typename Temp>
     consteval bool is_specialization_of_v() {
         return __type_trait::is_spec_of_tvs_v<T, Temp>;
     }
 
-    template <typename T, template <auto, typename...> typename Temp>
+    template <typename T, template <auto, typename, typename... Ts> typename Temp>
     consteval bool is_specialization_of_v() {
         return __type_trait::is_spec_of_vts_v<T, Temp>;
     }

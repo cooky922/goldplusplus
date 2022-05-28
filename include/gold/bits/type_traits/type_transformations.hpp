@@ -42,16 +42,53 @@ namespace gold {
     template <typename Bool, typename T, typename... R>
     using conditionals_t = typename conditionals<Bool, T, R...>::type;
 
+    namespace __type_trait {
 
-    /// decay_if
-    template <bool Condition, typename T>
-    struct decay_if {
-        using type = conditional_t<Condition, std::decay_t<T>, T>;
-    };
+        // workaround since direct template alias of 'decltype(auto(<expr>))' is currently ICE
+        /// __type_trait::decay
+        template <typename>
+        struct decay;
+
+        // partial specialization
+        template <typename T>
+            requires requires { auto(std::declval<T>()); }
+        struct decay<T> {
+            using type = decltype(auto(std::declval<T>()));
+        };
+
+        // primary template definition
+        template <typename T>
+        struct decay {
+            using type = std::remove_cvref_t<T>;
+        };
+
+    } // namespace __type_trait
+
+    /// decay_t
+    template <typename T>
+    using decay_t = __type_trait::decay<T>::type;
+
+    /// decay
+    template <typename T>
+    using decay = std::type_identity<decay_t<T>>;
 
     /// decay_if_t
-    template <bool Condition, typename T>
-    using decay_if_t = typename decay_if<Condition, T>::type;
+    template <bool Cond, typename T>
+    using decay_if_t = conditional_t<Cond, decay_t<T>, T>;
+
+    /// decay_if
+    template <bool Cond, typename T>
+    using decay_if = std::type_identity<decay_if_t<Cond, T>>;
+
+    /// invoke_class_template
+    template <template <typename...> typename Temp, typename... Ts>
+    struct invoke_class_template {
+        using type = Temp<Ts...>;
+    };
+
+    /// invoke_class_template_t
+    template <template <typename...> typename Temp, typename... Ts>
+    using invoke_class_template_t = typename invoke_class_template<Temp, Ts...>::type;
 
     /// type_apply
     template <typename Type, template <typename> typename MetaTrans>
