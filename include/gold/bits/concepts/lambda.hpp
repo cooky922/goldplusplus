@@ -1,6 +1,6 @@
 // <gold/bits/concepts/lambda.hpp> - gold++ library
 
-// Copyright (C) 2021 - present Desmond Gold
+// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
 
 // note: internal header
 
@@ -8,25 +8,36 @@
 #ifndef __GOLD_BITS_CONCEPTS_LAMBDA_HPP
 #define __GOLD_BITS_CONCEPTS_LAMBDA_HPP
 
-#include <gold/bits/typeof/compile_typeof.hpp>
+#include <concepts>
+#include <gold/bits/type_name/type_name_c.hpp>
 
 namespace gold {
 
-    namespace __detail {
+    namespace __concepts {
 
+        /// __concepts::is_lambda
         template <typename T>
-        consteval bool is_anonymous_func_() {
-            constexpr auto name_ = gold::__detail::compile_type_of_<T>();
-
-            if (name_.contains("<lambda closure object>")) return false;
-            return name_.contains("<lambda(");
+        consteval bool is_lambda() {
+            constexpr auto name = gold::type_name<T>();
+            if (name.contains("<lambda closure object>"))
+                return false;
+            return name.contains("<lambda(");
         }
 
-    } // namespace __detail
+    } // namespace __concepts
 
     /// lambda
+    // TODO: create more constrained lambda
     template <typename T>
-    concept lambda = __detail::is_anonymous_func_<T>();
+    concept lambda = __concepts::is_lambda<T>();
+
+    /// generic_lambda
+    template <typename T>
+    concept generic_lambda = lambda<T> && !requires { &T::operator(); };
+
+    /// stateless_lambda
+    template <typename T>
+    concept stateless_lambda = lambda<T> && std::default_initializable<T>;
 
 } // namespace gold
 

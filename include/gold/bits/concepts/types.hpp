@@ -35,6 +35,19 @@ namespace gold {
     template <typename T>
     concept structural = is_structural_v<T>;
 
+    namespace __concepts {
+
+        template <typename T, typename U>
+        concept layout_compatible_with_impl = std::is_layout_compatible_v<T, U>;
+
+    } // namespace __concepts
+
+    /// layout_compatible_with
+    template <typename T, typename U>
+    concept layout_compatible_with =
+        __concepts::layout_compatible_with_impl<T, U> &&
+        __concepts::layout_compatible_with_impl<U, T>;
+
     /// same_all
     template <typename T, typename... Ts>
     concept same_all = (std::same_as<T, Ts> && ...);
@@ -49,6 +62,18 @@ namespace gold {
         T{args...};
     };
 
-}
+    /// relocatable
+    template <typename T>
+    concept relocatable = std::destructible<T> && std::move_constructible<T>;
+
+    /// decayable
+    template <typename T>
+    concept decayable = requires (T op) {
+        auto(op);
+        auto{op};
+    } && ((std::is_object_v<std::remove_cvref_t<T>> && !std::is_array_v<std::remove_cvref_t<T>>) ?
+    (std::copy_constructible<T> || std::move_constructible<T>) : true);
+
+} // namespace gold
 
 #endif // __GOLD_BITS_CONCEPTS_TYPES_HPP
