@@ -10,6 +10,7 @@
 #include <gold/bits/type_traits/type_classification.hpp>
 #include <gold/bits/type_traits/type_properties.hpp>
 #include <gold/bits/type_traits/type_relationships.hpp>
+#include <gold/bits/type_traits/template_instantiation.hpp>
 #include <gold/bits/type_traits/specialization_of.hpp>
 #include <gold/bits/type_traits/type_transformations.hpp>
 #include <gold/bits/type_traits/detection.hpp>
@@ -19,57 +20,45 @@ namespace gold {
     //// Helper Utilities
     /// type_sentinel
     /// types_inherited
-    /// size_constant
-    /// index_constant
-    /// index_constant_v
+    /// size_constant[_v]
+    /// index_constant[_v]
     /// always_true
     /// always_false
 
     //// Type Classification
-    /// is_char
-    /// is_char_v
+    /// is_char[_v]
 
     //// Type Properties
-    /// is_complete_type
-    /// is_complete_type_v
-    /// pointer_rank
-    /// pointer_rank_v
+    /// is_complete_type[_v]
+    /// pointer_rank[_v]
 
     //// Type Relationships
-    /// is_not_same
-    /// is_not_same_v
-    /// are_same
-    /// are_same_v
-    /// are_not_same
-    /// are_not_same_v
-    /// is_any_of
-    /// is_any_of_v
+    /// is_not_same[_v]
+    /// are_same[_v]
+    /// are_not_same[_v]
+    /// is_any_of[_v]
+    /// is_narrowing_convertible[_v]
+
+    //// Template Instantiation
+    /// is_template_instantiation[_v]
+
+    //// Template Specialiation
     /// is_specialization_of_v ()
-    /// is_narrowing_convertible
-    /// is_narrowing_convertible_v
 
     //// Type Transformation
-    /// conditionals
-    /// conditionals_t
-    /// decay_if
-    /// decay_if_t
-    /// type_apply
-    /// type_apply_t
-    /// type_apply_if
-    /// type_apply_if_t
-    /// disable_if
-    /// disable_if_t
+    /// conditionals[_t]
+    /// decay[_t]
+    /// decay_if[_t]
+    /// type_apply[_t]
+    /// type_apply_if[_t]
+    /// disable_if[_t]
 
     //// Detection Utilites
-    /// is_detected
-    /// is_detected_v
+    /// is_detected[_v]
     /// detected_t
-    /// detected_or
-    /// detected_or_t
-    /// is_detected_exact
-    /// is_detected_exact_v
-    /// is_detected_convertible
-    /// is_detected_convertible_v
+    /// detected_or[_t]
+    /// is_detected_exact[_v]
+    /// is_detected_convertible[_v]
 
 } // namespace gold
 

@@ -20,7 +20,7 @@ namespace gold {
     template <std::size_t I, typename... Ts>
         requires (I < sizeof...(Ts))
     using pack_element_at = typename decltype(
-        __pack::select_<I>(__pack::indexer_<std::index_sequence_for<Ts...>, Ts...>{})
+        __pack::select_arg<I>(__pack::indexer<std::index_sequence_for<Ts...>, Ts...>{})
     )::type;
 
     /// pack_at_front
@@ -29,22 +29,22 @@ namespace gold {
 
     /// pack_at_back
     template <typename... Ts>
-    using pack_at_back = typename __pack::pack_at_back_impl_<Ts...>::type;
+    using pack_at_back = typename __pack::at_back_impl<Ts...>::type;
 
     //// Template Utilities
     /// pack_for_each
     template <typename... Ts, typename F>
     constexpr void pack_for_each(F&& f) noexcept {
-        /// requirement:
-        /// the return type must be discardable
-        /// should only be lambda or function object (templated)
+        // requirement:
+        // the return type must be discardable
+        // should only be lambda or function object (templated)
         (f.template operator()<Ts>(), ...);
     }
 
     /// pack_for_each
     template <auto... Ns, typename F>
     constexpr void pack_for_each(F&& f) noexcept {
-        /// same to pack_for_each type overload
+        // same to pack_for_each type overload
         (f.template operator()<Ns>(), ...);
     }
 
@@ -54,7 +54,7 @@ namespace gold {
         return __pack::get_at_impl<std::make_index_sequence<I>>::at(std::forward<Args>(args)...);
     }
 
-    /// sequence_for_each
+    /// sequence_for_each [TBA...]
 
 } // namespace gold
 

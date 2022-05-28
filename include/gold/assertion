@@ -16,7 +16,7 @@ namespace gold {
         explicit assertion_error(const char* msg)
         : std::runtime_error(msg) {}
 
-        static void on_error(const char*) {}
+        [[noreturn]] static void assertion_failure() {}
 
       public:
         friend constexpr void system_assert(bool, const char*);
@@ -25,10 +25,15 @@ namespace gold {
 
     /// system_assert
     constexpr void system_assert(bool cond, const char* msg = "assertion error") {
-        #ifndef NDEBUG
-        if (!cond)
-            throw assertion_error{msg};
-        #endif // NDEBUG
+        if consteval {
+            if (!cond)
+                assertion_error::assertion_failure();
+        } else {
+            #ifndef NDEBUG
+            if (!cond)
+                throw assertion_error{msg};
+            #endif // NDEBUG
+        }
     }
 
 } // namespace gold

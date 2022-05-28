@@ -12,7 +12,7 @@ namespace gold::inline literals::inline struct_literals {
 
     /// string literal operator template - for string into 'struct_array'
     template <struct_array A>
-    constexpr auto operator""_fs() {
+    consteval auto operator""_fs() {
         return struct_array { A };
     }
 

@@ -10,11 +10,11 @@
 
 namespace gold {
 
-    /// qualified_distribution_type
-    /// random_number_generator
-
-    /// random
-    inline random_number_generator<std::mt19937> random {};
+    /// qualified_distribution_type [ defined in <gold/bits/rand_gen.hpp> ]
+    /// random_seed_t               [ defined in <gold/bits/rand_gen.hpp> ]
+    /// basic_random_generator      [ defined in <gold/bits/rand_gen.hpp> ]
+    /// default_random_generator    [ defined in <gold/bits/rand_gen.hpp> ]
+    /// random                      [ defined in <gold/bits/rand_gen.hpp> ]
 
 } // namespace gold
 

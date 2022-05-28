@@ -1,0 +1,139 @@
+// <gold/stacktrace> - gold++ library
+
+// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_STACKTRACE
+#define __GOLD_STACKTRACE
+
+#include <compare>
+#include <string>
+#include <vector>
+#include <cstddef>
+
+namespace gold {
+
+    namespace __stacktrace { struct impl; } // not defined
+
+    /// stacktrace [fwd]
+    class stacktrace;
+
+    /// stacktrace_entry
+    class stacktrace_entry {
+      public:
+        using native_handle_type = std::uintptr_t;
+
+      private:
+        native_handle_type m_pc_ = -1;
+
+        friend class stacktrace;
+        friend struct __stacktrace::impl;
+
+        friend std::ostream& operator<<(std::ostream&, const stacktrace_entry&);
+
+      public:
+        constexpr stacktrace_entry() noexcept = default;
+        constexpr stacktrace_entry(const stacktrace_entry&) = default;
+        constexpr stacktrace_entry(stacktrace_entry&&) noexcept = default;
+        constexpr ~stacktrace_entry() = default;
+
+        constexpr stacktrace_entry& operator=(const stacktrace_entry&) = default;
+        constexpr stacktrace_entry& operator=(stacktrace_entry&&) noexcept = default;
+
+        //// observers
+        constexpr native_handle_type native_handle() const noexcept { return m_pc_; }
+
+        constexpr explicit operator bool() const noexcept {
+            return m_pc_ != native_handle_type(-1);
+        }
+
+        //// queries
+        std::string function_name() const;
+        std::string module_file_name() const;
+
+        //// comparisons
+        constexpr bool operator==(const stacktrace_entry&) const noexcept = default;
+        constexpr std::strong_ordering operator<=>(const stacktrace_entry&) const noexcept = default;
+
+    };
+
+    /// stacktrace
+    class stacktrace {
+      private:
+        using container_type = std::vector<stacktrace_entry>;
+        friend struct __stacktrace::impl;
+
+      public:
+        using value_type = container_type::value_type;
+        using reference = container_type::reference;
+        using const_reference = container_type::const_reference;
+        using const_iterator = container_type::const_iterator;
+        using iterator = const_iterator;
+        using reverse_iterator = container_type::reverse_iterator;
+        using const_reverse_iterator = container_type::const_reverse_iterator;
+        using difference_type = container_type::difference_type;
+        using size_type = unsigned short;
+
+      private:
+        container_type m_entries_;
+
+      public:
+        //// ctors, dtors, and assignments [rule of 0]
+        stacktrace() noexcept = default;
+        stacktrace(const stacktrace&) = default;
+        stacktrace(stacktrace&&) noexcept = default;
+        ~stacktrace() = default;
+        stacktrace& operator=(const stacktrace&) = default;
+        stacktrace& operator=(stacktrace&&) noexcept = default;
+
+        //// creations, 'current'
+        static stacktrace current() noexcept;
+        static stacktrace current(size_type) noexcept;
+        static stacktrace current(size_type, size_type) noexcept;
+
+        //// iterator and element access
+        const_iterator begin() const noexcept { return m_entries_.begin(); }
+        const_iterator end() const noexcept { return m_entries_.end(); }
+        const_reverse_iterator rbegin() const noexcept { return m_entries_.rbegin(); }
+        const_reverse_iterator rend() const noexcept { return m_entries_.rend(); }
+
+        const_iterator cbegin() const noexcept { return begin(); }
+        const_iterator cend() const noexcept { return end(); }
+        const_reverse_iterator crbegin() const noexcept { return rbegin(); }
+        const_reverse_iterator crend() const noexcept { return rend(); }
+
+        [[nodiscard]] bool empty() const noexcept { return m_entries_.empty(); }
+        size_type size() const noexcept { return m_entries_.size(); }
+        size_type max_size() const noexcept { return m_entries_.max_size(); }
+
+        const_reference operator[](size_type n) const noexcept {
+            // [[precondition: n < size()]] otherwise, undefined behavior
+            return m_entries_[n];
+        }
+
+        const_reference at(size_type n) const {
+            // [[precondition: n < size()]] otherwise, throwing exception
+            return m_entries_.at(n);
+        }
+
+        //// comparisons
+        bool operator==(const stacktrace&) const noexcept = default;
+        std::strong_ordering operator<=>(const stacktrace&) const noexcept = default;
+
+        //// modifiers
+        void swap(stacktrace& other) noexcept { m_entries_.swap(other.m_entries_); }
+        friend void swap(stacktrace& lhs, stacktrace& rhs) noexcept { lhs.swap(rhs); }
+
+    };
+
+    /// operator<<
+    std::ostream& operator<<(std::ostream&, const stacktrace_entry&);
+    std::ostream& operator<<(std::ostream&, const stacktrace&);
+
+    /// to_string
+    std::string to_string(const stacktrace_entry&);
+    std::string to_string(const stacktrace&);
+
+} // namespace gold
+
+#endif // __GOLD_STACKTRACE

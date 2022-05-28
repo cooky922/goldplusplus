@@ -18,6 +18,13 @@ namespace gold::numbers {
     /// tau
     inline constexpr double tau = tau_v<double>;
 
+    /// inv_phi_v
+    template <std::floating_point T>
+    inline constexpr T inv_phi_v = T(0.618033988749894848204586834365638118L);
+
+    /// inv_phi
+    inline constexpr double inv_phi = inv_phi_v<double>;
+
     /// silver_ratio_v
     template <std::floating_point T>
     inline constexpr T silver_ratio_v = T(2.4142135623730950488L);

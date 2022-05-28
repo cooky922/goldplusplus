@@ -1,0 +1,96 @@
+// <gold/ctype_info> - gold++ library
+
+// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_CTYPE_INFO
+#define __GOLD_CTYPE_INFO
+
+#include <gold/type_name>
+
+namespace gold {
+
+    namespace __hash {
+
+        /// fnv_bytes
+        constexpr std::size_t fnv_bytes(const char* ptr, std::size_t len) {
+            std::size_t h = 0;
+            for (; len; --len) {
+                h ^= static_cast<std::size_t>(*ptr++);
+                h *= 1099511628211uz;
+            }
+            return h;
+        }
+
+        constexpr std::size_t hash_string(std::string_view sv) noexcept {
+            return fnv_bytes(sv.data(), sv.size());
+        }
+
+
+    } // namespace __hash
+
+    /// ctype_info [ fwd decl ]
+    class ctype_info;
+
+    /// ctypeid [ fwd decl ]
+    template <typename>
+    consteval ctype_info ctype_id() noexcept;
+
+    template <typename T>
+    constexpr ctype_info ctype_id(const T&) noexcept;
+
+    namespace __ctype_info {
+
+        template <typename T>
+        struct imp_info {
+            inline static constexpr std::string_view s_name_ = gold::type_name<T>();
+        };
+
+    } // namespace __type_info
+
+    /// ctype_info
+    class ctype_info {
+      private:
+        const std::string_view* m_name_ptr_;
+
+        constexpr explicit ctype_info(const std::string_view* name_ptr)
+        : m_name_ptr_(name_ptr) {}
+
+        template <typename>
+        friend consteval ctype_info ctype_id() noexcept;
+
+      public:
+        constexpr ctype_info(const ctype_info&) noexcept = default;
+        constexpr ctype_info& operator=(const ctype_info&) noexcept = default;
+
+        constexpr std::string_view name() const noexcept { return *m_name_ptr_; }
+        constexpr std::size_t hash_code() const noexcept {
+            if consteval { return __hash::hash_string(*m_name_ptr_); }
+            else { return reinterpret_cast<std::size_t>(m_name_ptr_); }
+        }
+
+        // generates unique type info
+        inline static constexpr auto unique_id = []<typename T = decltype([]{})> consteval noexcept {
+            return ctype_info { &__ctype_info::imp_info<T>::s_name_ };
+        };
+
+        // GCC 12 supports comparison between extern object address at different
+        //        template instantiations
+        constexpr bool operator==(const ctype_info&) const noexcept = default;
+    };
+
+    /// ctype_id [ impl ]
+    template <typename T>
+    consteval ctype_info ctype_id() noexcept {
+        return ctype_info { &__ctype_info::imp_info<std::remove_cvref_t<T>>::s_name_ };
+    }
+
+    template <typename T>
+    constexpr ctype_info ctype_id(const T&) noexcept {
+        return ctype_id<T>();
+    }
+
+} // namespace gold
+
+#endif // __GOLD_CTYPE_INFO
+

@@ -1,0 +1,50 @@
+// <gold/clipboard> - gold++ library
+
+// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_CLIPBOARD
+#define __GOLD_CLIPBOARD
+
+#include <bits/exception.h>
+#include <string_view>
+#include <string>
+#include <gold/type_traits>
+#include <gold/bits/concepts/types.hpp>
+
+namespace gold {
+
+    /// clipboard_error
+    class clipboard_error : public std::exception {
+      private:
+        const char* msg;
+
+      public:
+        clipboard_error(std::string_view sv)
+        : msg(sv.data()) {}
+
+        const char* what() const noexcept override { return msg; }
+    };
+
+    /// basic_clipboard
+    template <gold::char_type CharT>
+    class basic_clipboard {
+      private:
+        inline static constexpr bool s_is_char_  = std::is_same_v<CharT, char>;
+
+      public:
+        static void clear();
+        static bool empty();
+        static void copy_from(std::basic_string_view<CharT>);
+        static std::basic_string<CharT> paste_to();
+    };
+
+    /// clipboard
+    using clipboard  = basic_clipboard<char>;
+
+    /// wclipboard
+    using wclipboard = basic_clipboard<wchar_t>;
+
+} // namespace gold
+
+#endif // __GOLD_CLIPBOARD

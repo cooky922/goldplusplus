@@ -14,9 +14,11 @@ namespace gold {
 
     namespace __bit {
 
+        /// __bit::trivially_copyable
         template <typename T>
-        concept trivially_copyable = std::is_trivially_copyable_v<T>;
+        concept trivially_copyable = std::is_trivially_copyable_v<std::remove_cvref_t<T>>;
 
+        /// __bit::bit_castable
         template <typename T, typename U>
         concept bit_castable = (sizeof(T) == sizeof(U))
                             && trivially_copyable<T>
@@ -34,8 +36,7 @@ namespace gold {
     }
 
     /// to_writable_bytes
-    template <typename T>
-        requires __bit::trivially_copyable<std::remove_cvref_t<T>>
+    template <__bit::trivially_copyable T>
     constexpr auto to_writable_bytes(T&& obj) noexcept {
         return std::bit_cast<
             std::array<std::byte, sizeof(T)>

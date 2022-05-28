@@ -1,0 +1,214 @@
+// <gold/ratio> - gold++ library
+
+// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_RATIO
+#define __GOLD_RATIO
+
+#include <limits>
+#include <gold/math_int>
+#include <gold/basic_types>
+#include <gold/bits/type_traits/specialization_of.hpp>
+
+namespace gold {
+
+    /// ratio_t [ fwd decl ]
+    // - compile time ratio
+    template <gold::intmax_t Num, gold::intmax_t Den = 1>
+    struct ratio_t;
+
+    namespace __ratio {
+
+        using yocto = ratio_t<1, gold::math::power(gold::intmax_t(10), 24)>;
+        using zepto = ratio_t<1, gold::math::power(gold::intmax_t(10), 21)>;
+        using atto  = ratio_t<1, gold::math::power(gold::intmax_t(10), 18)>;
+        using femto = ratio_t<1, gold::math::power(gold::intmax_t(10), 15)>;
+        using pico  = ratio_t<1, gold::math::power(gold::intmax_t(10), 12)>;
+        using nano  = ratio_t<1, gold::math::power(gold::intmax_t(10), 9)>;
+        using micro = ratio_t<1, gold::math::power(gold::intmax_t(10), 6)>;
+        using milli = ratio_t<1, gold::math::power(gold::intmax_t(10), 3)>;
+        using centi = ratio_t<1, gold::math::power(gold::intmax_t(10), 2)>;
+        using deci  = ratio_t<1, gold::math::power(gold::intmax_t(10), 1)>;
+        using deca  = ratio_t<gold::math::power(gold::intmax_t(10), 1), 1>;
+        using hecto = ratio_t<gold::math::power(gold::intmax_t(10), 2), 1>;
+        using kilo  = ratio_t<gold::math::power(gold::intmax_t(10), 3), 1>;
+        using mega  = ratio_t<gold::math::power(gold::intmax_t(10), 6), 1>;
+        using giga  = ratio_t<gold::math::power(gold::intmax_t(10), 9), 1>;
+        using tera  = ratio_t<gold::math::power(gold::intmax_t(10), 12), 1>;
+        using peta  = ratio_t<gold::math::power(gold::intmax_t(10), 15), 1>;
+        using exa   = ratio_t<gold::math::power(gold::intmax_t(10), 18), 1>;
+        using zetta = ratio_t<gold::math::power(gold::intmax_t(10), 21), 1>;
+        using yotta = ratio_t<gold::math::power(gold::intmax_t(10), 24), 1>;
+
+        inline constexpr auto int_max_max = std::numeric_limits<gold::intmax_t>::max();
+
+        namespace __error {
+            [[noreturn]] inline void integer_arithmetic_overflow() {}
+        }
+
+        consteval gold::intmax_t abs(gold::intmax_t n) noexcept {
+            return n < 0 ? -n : n;
+        }
+
+        consteval gold::intmax_t signof(gold::intmax_t n) noexcept {
+            return n < 0 ? -1 : 1;
+        }
+
+        consteval gold::intmax_t gcd(gold::intmax_t a, gold::intmax_t b) noexcept {
+            return std::gcd(a, b);
+        }
+
+        consteval gold::intmax_t lcd(gold::intmax_t a, gold::intmax_t b) noexcept {
+            return std::lcm(a, b);
+        }
+
+        consteval gold::intmax_t safe_mult(gold::intmax_t a, gold::intmax_t b) noexcept {
+            const bool good = __ratio::abs(a) <= __ratio::int_max_max / (b == 0 ? 1 : __ratio::abs(b));
+            if (!good)
+                __error::integer_arithmetic_overflow();
+            return a * b;
+        }
+
+        consteval gold::intmax_t safe_add(gold::intmax_t a, gold::intmax_t b) noexcept {
+            const bool bad = __ratio::signof(a) == __ratio::signof(b) && __ratio::abs(a) > __ratio::int_max_max - __ratio::abs(b);
+            if (bad)
+                __error::integer_arithmetic_overflow();
+            return a + b;
+        }
+
+        consteval auto floor(std::floating_point auto n) noexcept {
+            return __builtin_floor(n);
+        }
+
+        consteval gold::intmax_t round(std::floating_point auto n) noexcept {
+            return static_cast<gold::intmax_t>(__builtin_round(n));
+        }
+
+    } // namespace __ratio
+
+    /// ratio_t
+    template <gold::intmax_t Num, gold::intmax_t Den>
+    struct ratio_t {
+        static_assert(Den != 0, "zero denominator");
+        inline static constexpr auto num = __ratio::signof(Num) * __ratio::signof(Den) * __ratio::abs(Num) / __ratio::gcd(Num, Den);
+        inline static constexpr auto den = __ratio::abs(Den) / __ratio::gcd(Num, Den);
+        using type = ratio_t<num, den>;
+
+        template <auto N>
+        inline static constexpr auto scale = (N * static_cast<decltype(N)>(num)) / static_cast<decltype(N)>(den);
+
+        static consteval auto reciprocal() noexcept {
+            return ratio_t<Den, Num>{};
+        }
+
+        template <gold::intmax_t Num2, gold::intmax_t Den2>
+        friend consteval auto operator+(ratio_t a, ratio_t<Num2, Den2> b) noexcept {
+            constexpr auto nx1 = num;
+            constexpr auto nx2 = b.num;
+            constexpr auto dx1 = den;
+            constexpr auto dx2 = b.den;
+            constexpr auto gx  = __ratio::gcd(dx1, dx2);
+            return ratio_t<
+                __ratio::safe_add(__ratio::safe_mult(nx1, dx2 / gx),
+                                  __ratio::safe_mult(nx2, dx1 / gx)),
+                __ratio::safe_mult(dx1, dx2 / gx)
+            >{};
+        }
+
+        template <gold::intmax_t Num2, gold::intmax_t Den2>
+        friend consteval auto operator-(ratio_t a, ratio_t<Num2, Den2> b) noexcept {
+            constexpr auto nx2 = b.num;
+            constexpr auto dx2 = b.den;
+            return a + ratio_t<-nx2, dx2>{};
+        }
+
+        template <gold::intmax_t Num2, gold::intmax_t Den2>
+        friend consteval auto operator*(ratio_t a, ratio_t<Num2, Den2> b) noexcept {
+            constexpr auto nx1 = a.num;
+            constexpr auto nx2 = b.num;
+            constexpr auto dx1 = a.den;
+            constexpr auto dx2 = b.den;
+            constexpr auto gx  = __ratio::gcd(nx1, dx2);
+            constexpr auto gy  = __ratio::gcd(nx2, dx1);
+
+            return ratio_t<
+                __ratio::safe_mult(nx1 / gx, nx2 / gy),
+                __ratio::safe_mult(dx1 / gy, dx2 / gx)
+            >{};
+        }
+
+        template <gold::intmax_t Num2, gold::intmax_t Den2>
+        friend consteval auto operator/(ratio_t a, ratio_t<Num2, Den2> b) noexcept {
+            constexpr auto nx2 = b.num;
+            constexpr auto dx2 = b.den;
+            constexpr auto rx2_inverse = ratio_t<dx2, nx2>{};
+            return a * rx2_inverse;
+        }
+
+        template <gold::intmax_t Num2, gold::intmax_t Den2>
+        friend consteval bool operator==(ratio_t a, ratio_t<Num2, Den2> b) noexcept {
+            return a.num == b.num && a.den == b.den;
+        }
+
+        template <gold::intmax_t Num2, gold::intmax_t Den2>
+        friend consteval auto operator<=>(ratio_t a, ratio_t<Num2, Den2> b) noexcept {
+            constexpr auto nx1 = a.num;
+            constexpr auto nx2 = b.num;
+            constexpr auto dx1 = a.den;
+            constexpr auto dx2 = b.den;
+            constexpr auto lcdx = __ratio::lcd(dx1, dx2);
+            constexpr auto lnx1 = lcdx / dx1 * nx1;
+            constexpr auto lnx2 = lcdx / dx2 * nx2;
+            return lnx1 <=> lnx2;
+        }
+    };
+
+    /// ratio
+    template <gold::intmax_t Num, gold::intmax_t Den = 1>
+    inline constexpr ratio_t<Num, Den> ratio {};
+
+    //// Constants
+    inline constexpr __ratio::yocto yocto {};
+    inline constexpr __ratio::zepto zepto {};
+    inline constexpr __ratio::atto  atto  {};
+    inline constexpr __ratio::femto femto {};
+    inline constexpr __ratio::pico  pico  {};
+    inline constexpr __ratio::nano  nano  {};
+    inline constexpr __ratio::micro micro {};
+    inline constexpr __ratio::milli milli {};
+    inline constexpr __ratio::centi centi {};
+    inline constexpr __ratio::deci  deci  {};
+    inline constexpr __ratio::deca  deca  {};
+    inline constexpr __ratio::hecto hecto {};
+    inline constexpr __ratio::kilo  kilo  {};
+    inline constexpr __ratio::mega  mega  {};
+    inline constexpr __ratio::giga  giga  {};
+    inline constexpr __ratio::tera  tera  {};
+    inline constexpr __ratio::peta  peta  {};
+    inline constexpr __ratio::exa   exa   {};
+    inline constexpr __ratio::zetta zetta {};
+    inline constexpr __ratio::yotta yotta {};
+
+    /// to_ratio
+    template <std::floating_point auto N, gold::intmax_t Prec = 1000000000>
+    consteval auto to_ratio() {
+        // problem:
+        // - does not work with non-terminating decimals
+        constexpr auto integ = __ratio::floor(N);
+        constexpr auto frac  = N - integ;
+        constexpr auto g = __ratio::gcd(__ratio::round(frac * Prec), Prec);
+        return ratio<
+            static_cast<gold::intmax_t>(__ratio::round(frac * Prec) / g) +
+            static_cast<gold::intmax_t>(integ) * static_cast<gold::intmax_t>(Prec / g),
+            static_cast<gold::intmax_t>(Prec / g)
+        >;
+    }
+
+    //// TODO:
+    /// to_ratio supporting parse strings
+    /// gold::fraction, runtime version of gold::ratio
+
+} // namespace gold
+
+#endif // __GOLD_RATIO

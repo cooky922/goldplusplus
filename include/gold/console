@@ -15,16 +15,21 @@
 
 namespace gold {
 
-    /// console_type [ fwd decl]
+    /// console_type [fwd decl]
     class console_type;
 
-    namespace __consoles { console_type& current_console(); } // namespace __consoles
+    namespace __consoles {
+
+        /// __consoles::current_console [fwd decl]
+        console_type& current_console();
+
+    } // namespace __consoles
 
     /// console_type
     class console_type {
       public:
         /// native_handle_type
-        using native_handle_type = gold::native_handle_t;
+        using native_handle_type = void*;
 
       private:
 

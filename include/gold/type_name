@@ -6,49 +6,18 @@
 #ifndef __GOLD_TYPE_NAME
 #define __GOLD_TYPE_NAME
 
-#include <gold/bits/typeof/compile_typeof.hpp>
-#include <gold/bits/typeof/runtime_typeof.hpp>
+#include <gold/bits/type_name/type_name_c.hpp>
+#include <gold/bits/type_name/type_name_r.hpp>
 #include <gold/bits/type_name/template_arg_names.hpp>
 
 namespace gold {
 
     /// type_name - compile type name query
-    // source: source_location
-    template <typename T>
-    constexpr auto type_name(T&& arg) {
-        return __detail::compile_type_of_(std::forward<T>(arg));
-    }
-
-    template <typename T>
-    constexpr auto type_name() {
-        return __detail::compile_type_of_<T>();
-    }
-
     /// type_name_no_cvref
-    template <typename T>
-    constexpr auto type_name_no_cvref(const T&) {
-        return __detail::compile_type_of_<T>();
-    }
-
     /// type_name_no_collapse
-    template <typename T>
-    constexpr auto type_name_no_collapse(T&&) {
-        return __detail::compile_type_of_<T>();
-    }
 
-    /// type_name_r - runtime type name query
-    // source: type_info
-    template <typename T>
-    auto type_name_r(const T& arg) {
-        return __detail::type_of_(arg);
-    }
-
-    template <typename T>
-    auto type_name_r() {
-        return __detail::type_of_<T>();
-    }
-
-    /// demangle
+    //// Runtime-Based Type Name
+    /// type_name_r
 
     //// Template Argument Names
     /// raw_tt_arg_names

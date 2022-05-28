@@ -1,0 +1,19 @@
+// <gold/memory> - gold++ library
+
+// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_MEMORY
+#define __GOLD_MEMORY
+
+#include <gold/bits/memory/voidify.hpp>
+#include <gold/bits/memory/ops.hpp>
+#include <gold/bits/memory/ops_algo.hpp>
+
+// Components
+// [ / ] Memory Algorithms
+// [   ] Allocators
+// [   ] Pre-allocated Buffer
+// [   ] Pool
+
+#endif // __GOLD_MEMORY

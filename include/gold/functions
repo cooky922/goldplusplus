@@ -1,0 +1,19 @@
+// <gold/functions> - gold++ library
+
+// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_FUNCTIONS
+#define __GOLD_FUNCTIONS
+
+#include <gold/bits/functional/function_view.hpp>
+
+// defines function wrappers
+
+namespace gold {
+
+    /// function_view
+
+} // namespace gold
+
+#endif // __GOLD_FUNCTIONS

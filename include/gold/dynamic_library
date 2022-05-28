@@ -6,11 +6,10 @@
 #ifndef __GOLD_DYNAMIC_LIBRARY
 #define __GOLD_DYNAMIC_LIBRARY
 
-#include <vector>
 #include <string>
+#include <span>
 #include <stdexcept>
-
-extern "C" { struct HINSTANCE__; }
+#include <gold/basic_types>
 
 namespace gold {
 
@@ -20,24 +19,32 @@ namespace gold {
         explicit dynamic_library_error(const char* s)
         : std::runtime_error(s) {}
 
+        explicit dynamic_library_error(const std::string& s)
+        : std::runtime_error(s) {}
+
         virtual ~dynamic_library_error() noexcept = default;
     };
 
-    class dynamic_library;
+    /// dl_module
+    class dl_module;
 
     /// dl_symbol
     class dl_symbol {
       public:
+        /// native_handle_type
         using native_handle_type = long long int (*) ();
 
       private:
+        /// member data
         native_handle_type m_symbol_;
 
+        /// private ctor
         constexpr dl_symbol() noexcept = default;
         constexpr dl_symbol(native_handle_type arg) noexcept
         : m_symbol_(arg) {}
 
-        friend class dynamic_library;
+        /// friend decl.
+        friend class dl_module;
 
         template <typename T>
         friend T* dl_symbol_cast(const dl_symbol*) noexcept;
@@ -46,10 +53,10 @@ namespace gold {
         /// .native_handle
         native_handle_type native_handle() const noexcept { return m_symbol_; }
 
-        /// .address_to
-        const void* address_to() const noexcept { return reinterpret_cast<void*>(m_symbol_); }
+        /// .to_address
+        const void* to_address() const noexcept { return reinterpret_cast<void*>(m_symbol_); }
 
-        /// operator bool
+        /// .operator bool
         explicit operator bool() const noexcept { return static_cast<bool>(m_symbol_); }
     };
 
@@ -66,43 +73,43 @@ namespace gold {
         throw dynamic_library_error("invalid 'dl_symbol_cast' operation");
     }
 
-    namespace __dynamic_lib {
-
-        using dynamic_lib_handle = ::HINSTANCE__*;
-
-    } // namespace __dynamic_lib
-
-    /// dynamic_library
-    class dynamic_library {
+    /// dl_module
+    class dl_module {
       private:
-        __dynamic_lib::dynamic_lib_handle m_handle_;
+        inline static constexpr std::size_t s_max_size_  = 128;
+        inline static constexpr std::size_t s_max_align_ = 8;
+
+        /// member data
+        alignas(s_max_align_) std::byte m_data_[s_max_size_] { };
 
       public:
         /// constructors
-        explicit dynamic_library(std::string_view);
-
-        dynamic_library(const dynamic_library&) = delete;
-
-        dynamic_library(dynamic_library&&) noexcept;
+        dl_module() = default;
+        explicit dl_module(std::string_view);
+        dl_module(const dl_module&) = delete;
+        dl_module(dl_module&&) noexcept;
 
         /// destructor
-        ~dynamic_library();
+        ~dl_module() noexcept;
 
         /// assignments
-        dynamic_library& operator=(const dynamic_library&) = delete;
-
-        dynamic_library& operator=(dynamic_library&&) noexcept;
+        dl_module& operator=(const dl_module&) = delete;
+        dl_module& operator=(dl_module&&) noexcept;
 
         //// Observers
-        /// has_loaded
-        bool has_loaded() const noexcept;
+        /// has_value
+        bool has_value() const noexcept;
 
-        /// explicit operator bool
+        /// operator bool
         explicit operator bool() const noexcept;
 
         //// Modifiers
-        void reset();
+        /// swap
+        void swap(dl_module&) noexcept;
+        friend void swap(dl_module& lhs, dl_module& rhs) noexcept { lhs.swap(rhs); }
 
+        /// reset
+        void reset();
         void reset(std::string_view);
 
         //// Symbols Access
@@ -116,50 +123,51 @@ namespace gold {
         std::size_t size() const;
 
         /// name [ synonymous to 'module_name' ]
-        std::string name() const;
+        std::string_view name() const;
 
         /// module_name
-        std::string module_name() const;
+        std::string_view module_name() const;
 
         /// image_name
-        std::string image_name() const;
+        std::string_view image_name() const;
 
         /// symbol_names
-        std::vector<std::string> symbol_names() const;
+        std::span<const std::string> symbol_names() const;
 
         /// symbols
-        std::vector<gold::dl_symbol> symbols() const;
+        std::span<gold::dl_symbol> symbols() const;
 
         /// symbol
         gold::dl_symbol symbol(std::string_view) const;
 
-        /// symbol_as_if
+        /// entity_ptr
         template <typename T>
-        T* symbol_as_if(std::string_view sym) const noexcept {
+        T* entity_ptr(std::string_view sym) const noexcept {
             auto sym_result = this->symbol(sym);
             return dl_symbol_cast<T>(&sym_result);
         }
 
-        /// symbol_as
+        /// entity
         template <typename T>
-        T& symbol_as(std::string_view sym) const {
-            if (auto result = this->template symbol_as_if<T>(sym); result)
+        T& entity(std::string_view sym) const {
+            if (auto result = this->template entity_ptr<T>(sym); result)
                 return *result;
             throw dynamic_library_error("invalid 'symbol_as' operation");
         }
 
-        /// invoke_symbol
+        /// entity_invoke
         template <typename R, typename... Args>
-        decltype(auto) invoke_symbol(std::string_view sym, Args&&... args) const {
-            return this->template symbol_as<R(Args...)>(sym)(std::forward<Args>(args)...);
+        decltype(auto) entity_invoke(std::string_view sym, Args&&... args) const {
+            return this->template entity<R(Args...)>(sym)(std::forward<Args>(args)...);
         }
 
         //// Comparisons
         /// operator==
-        bool operator==(const dynamic_library&) const noexcept = default;
+        bool operator==(const dl_module&) const noexcept = default;
 
         /// operator<=>
-        auto operator<=>(const dynamic_library&) const noexcept = default;
+        auto operator<=>(const dl_module&) const noexcept = default;
+
     };
 
 } // namespace gold

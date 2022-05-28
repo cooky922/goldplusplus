@@ -1,11 +1,18 @@
 // <gold/demangling> - gold++ library
 
-// Copyright (C) [ 2021 - 2022 ] -present Desmond Gold
+// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
 
 #pragma once
 #ifndef __GOLD_DEMANGLING
 #define __GOLD_DEMANGLING
 
-#include <gold/bits/demangling.hpp>
+#include <string>
+
+namespace gold {
+
+    /// demangle
+    std::string demangle(std::string_view) noexcept;
+
+} // namespace gold
 
 #endif // __GOLD_DEMANGLING

@@ -6,24 +6,25 @@
 #ifndef __GOLD_ANY
 #define __GOLD_ANY
 
-#include <gold/bits/any/any_impl.hpp>
-#include <gold/bits/any/unique_any_impl.hpp>
-#include <gold/bits/any/any_cast.hpp>
-#include <gold/bits/any/basic_any_handler.hpp>
+#include <gold/bits/any/fwd.hpp>
+#include <gold/bits/any/bad_any_access.hpp>
+#include <gold/bits/any/cpo.hpp>
+#include <gold/bits/any/storage.hpp>
+#include <gold/bits/any/manager.hpp>
+#include <gold/bits/any/view_any.hpp>
+#include <gold/bits/any/any.hpp>
+#include <gold/bits/any/unique_any.hpp>
 
 namespace gold {
 
+    /// bad_any_access
+    /// view_any
     /// any
-    /// holds_current_type
     /// make_any
-    /// any_cast
-    /// maybe_any_cast
-
     /// unique_any
-    /// unique_holds_current_type
     /// make_unique_any
-    /// unique_any_cast
-    /// maybe_unique_any_cast
+    /// holds_current_type
+    /// any_cast
 
 } // namespace gold
 

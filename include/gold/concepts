@@ -7,6 +7,7 @@
 #define __GOLD_CONCEPTS
 
 #include <gold/bits/concepts/types.hpp>
+#include <gold/bits/concepts/allocator.hpp>
 #include <gold/bits/concepts/lambda.hpp>
 #include <gold/bits/concepts/string.hpp>
 #include <gold/bits/concepts/stream.hpp>
@@ -15,6 +16,8 @@ namespace gold {
 
     //// Types
     /// lambda		             [ defined in <gold/bits/concepts/lambda.hpp> ]
+    /// generic_lambda           [ defined in <gold/bits/concepts/lambda.hpp> ]
+    /// stateless_lambda         [ defined in <gold/bits/concepts/lambda.hpp> ]
     /// char_type	             [ defined in <gold/bits/concepts/types.hpp>  ]
     /// ordering_type            [ defined in <gold/bits/concepts/types.hpp>  ]
     /// qualified_numeric        [ defined in <gold/bits/concepts/types.hpp>  ]
@@ -23,6 +26,11 @@ namespace gold {
     /// same_all                 [ defined in <gold/bits/concepts/types.hpp>  ]
     /// different_from           [ defined in <gold/bits/concepts/types.hpp>  ]
     /// brace_constructible_from [ defined in <gold/bits/concepts/types.hpp>  ]
+    /// relocatable              [ defined in <gold/bits/concepts/types.hpp>  ]
+    /// decayable                [ defined in <gold/bits/concepts/types.hpp>  ]
+
+    //// Relationships
+    /// allocator_of             [ defined in <gold/bits/concepts/allocator.hpp> ]
 
     //// Strings
     /// enable_qualified_string  [ defined in <gold/bits/concepts/string.hpp> ]
