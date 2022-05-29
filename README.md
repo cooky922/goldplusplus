@@ -16,21 +16,24 @@
 * `[gold.types]` - Types Library
   * `[gold.types.basic]` - type aliases
   * `[gold.types.name]` - readable type information
-  * `[gold.types.traits]` - type traits
-  * `[gold.types.invocable_traits]` - invocable type traits
   * `[gold.types.concepts]` - basic type concepts
-  * `[gold.types.sequence]` - type sequence
+* `[gold.meta]` - Metaprogramming Utilities
+  * `[gold.meta.traits]` - type traits
+  * `[gold.meta.traits.invocable]` - invocable type traits
+  * `[gold.meta.pack]` - parameter pack algorithms
+  * `[gold.meta.sequence]` - meta sequences
+  * `[gold.meta.sequence.values]` - value sequences
+  * `[gold.meta.sequence.types]` - type sequences
 * `[gold.utility]` - General Purpose Utilities
-  * `[gold.utility.ops]`
+  * `[gold.utility.ops]` - general purpose functions and casts
   * `[gold.utility.scope_guard]`
   * `[gold.utility.tuple]` - tuple and other tuple-related utilities
   * `[gold.utility.any]` - type-safe type-erased type
   * `[gold.utility.expected]` - alternative to exceptions
   * `[gold.utility.vocabulary]` - vocabulary types
   * `[gold.utility.demangling]` - demangling using Itanium ABI
-  * `[gold.utility.pack]` - Parameter Pack Algorithms
-  * `[gold.utility.value_sequence]` - Value Sequence
 * `[gold.functional]` - Functional-Programming Library
+  * `[gold.functional.functions]` - function wrappers
 * `[gold.diagnostic]` - Diagnostic Library
   * `[gold.diagnostic.assertion]`
 * `[gold.containers]` - Containers and Collections Library
@@ -47,7 +50,10 @@
   * `[gold.coroutines.lazy]` - Lazy Evaluated Function
   * `[gold.coroutines.task]`
   * `[gold.coroutines.generator]`
-* `[gold.smart_ptrs]` - Smart Pointers
+* `[gold.memory]` - Memory Library
+  * `[gold.memory.smart_ptrs]` - smart pointers
+  * `[gold.memory.allocators]` - allocators
+  * `[gold.memory.ops]` - memory algorithms
 * `[gold.dynamic_library]`
 * `[gold.preview.apps]`
 * `[gold.preview.graphics]`
