@@ -53,34 +53,9 @@ namespace gold {
 ```
 
 ## `[gold.types.concepts]`
-+ Trivial Operation Concepts
 
 ```c++
 namespace gold {
-
-  /// trivial_type
-  template <typename T>
-  concept trivial_type = /* see description */;
-  
-  /// trivially_constructible_from
-  template <typename T, typename... Args>
-  concept trivially_constructible_from = /* see description */;
-  
-  /// trivially_copy_constructible
-  template <typename T>
-  concept trivially_copy_constructible = /* see description */;
-  
-  /// trivially_move_constructible
-  template <typename T>
-  concept trivially_move_constructible = /* see description */;
-  
-  /// trivially_destructible
-  template <typename T>
-  concept trivially_destructible = /* see description */;
-  
-  /// trivially_copyable
-  template <typename T>
-  concept trivially_copyable = /* see description */;
   
   /// bit_convertible_to
   template <typename From, typename To>
@@ -94,6 +69,8 @@ namespace gold {
 ```
 
 ## `[gold.format]`
+Revamp Text Formatting
+
 + `gold::format_write_context`
 + `gold::format_parse_context`
 
@@ -210,124 +187,29 @@ namespace gold {
 } // namespace gold
 ```
 
-## `[gold.sequence.values]`
-+ `gold::value_sequence` - as base class
-
-## `[gold.sequence.types]`
-```c++
-namespace gold {
-
-    /// namespace types
-    namespace types {
-
-        /// index_token_t
-        template <std::size_t I>
-        struct index_token_t;
-
-        template <std::size_t I>
-        inline constexpr index_token_t<I> index_token {};
-
-        /// sentinel_token_t
-        struct sentinel_token_t;
-
-        /// sentinel_token
-        inline constexpr sentinel_token_t sentinel_token {};
-
-        /// sequence_t
-        template <typename...>
-        struct sequence_t;
-
-        template <typename... Ts>
-        struct sequence_t<Ts...>;
-
-        template <>
-        struct sequence_t<>;
-
-        /// sequence
-        template <typename... Ts>
-        inline constexpr sequence_t<Ts...> sequence {};
-
-        /// null_sequence_t
-        using null_sequence_t = sequence_t<>;
-
-        /// null_sequence
-        inline constexpr null_sequence_t null_sequence {};
-
-    } // namespace types
-
-    /// type_sequence_t
-    template <typename... Ts>
-    using type_sequence_t = types::sequence_t<Ts...>;
-
-    /// type_sequence
-    template <typename... Ts>
-    inline constexpr auto type_sequence = types::sequence<Ts...>;
-    
-    /// null_type_sequence_t
-    using null_type_sequence_t = types::null_sequence_t;
-    
-    /// null_type_sequence
-    inline constexpr auto null_type_sequence = types::null_sequence;
-
-} // namespace gold
-```
-
 ## `[gold.types.movable_tuple]`
 + `gold::movable_tuple` - implemented using lambda expressions
 
 ## `[gold.type.tuples]`
-+ `gold::tuples::gettable_at`
-+ `gold::tuples::tuple_size[_v]`
-+ `gold::tuples::tuple_element[_t]`
-+ `gold::tuples::get`
-+ `gold::tuples::apply`
-+ `gold::tuples::apply_result[_t]`
-+ `gold::tuples::apply_each`
++ `gold::tuples::get_like`
++ `gold::tuples::size`
 + `gold::tuples::apply_each_n`
 + `gold::tuples::zip`
 + `gold::tuples::unzip`
 + `gold::tuples::concat`
++ `gold::tuples::fold_left`
++ `gold::tuples::fold_right`
++ `gold::tuples::fold_left_first`
++ `gold::tuples::fold_right_last`
 
 ```c++
 
 namespace gold::tuples {
 
-  // gettable_at
-  template <typename, std::size_t>
-  concept gettable_at = /* see description */
-  
-  // tuple_size
-  template <typename T>
-  struct tuple_size;
-  
-  // tuple_size_v
-  template <typename T>
-    requires requires { tuple_size<T>::value; }
-  inline constexpr std::size_t tuple_size_v = tuple_size<T>::value;
-  
-  // tuple_element
-  template <typename T, std::size_t I>
-  struct tuple_element;
-  
-  // tuple_element_t
-  template <typename T, std::size_t I>
-    requires requires { typename tuple_element<T, I>::type; }
-  using tuple_element_t = tuple_element<T, I>::type;
-
   inline namespace /* unspecified */ {
-    // get
+    // get_like
     template <std::size_t>
-    inline constexpr /* unspecified */ get = /* unspecified */;
-  }
-  
-  inline namespace /* unspecified */ {
-    // apply
-    inline constexpr /* unspecified */ apply = /* unspecified */;
-  }
-  
-  inline namespace /* unspecified */ {
-    // apply_each
-    inline constexpr /* unspecified */ apply_each = /* unspecified */;
+    inline constexpr /* unspecified */ get_like = /* unspecified */;
   }
   
   inline namespace /* unspecified */ {
@@ -347,8 +229,23 @@ namespace gold::tuples {
   }
   
   inline namespace /* unspecified */ {
-    // concat
-    inline constexpr /* unspecified */ concat = /* unspecified */;
+    // fold_left
+    inline constexpr /* unspecified */ fold_left = /* unspecified */;
+  }
+  
+  inline namespace /* unspecified */ {
+    // fold_right
+    inline constexpr /* unspecified */ fold_right = /* unspecified */;
+  }
+  
+  inline namespace /* unspecified */ {
+    // fold_left_first
+    inline constexpr /* unspecified */ fold_left_first = /* unspecified */;
+  }
+  
+  inline namespace /* unspecified */ {
+    // fold_right_last
+    inline constexpr /* unspecified */ fold_right_last = /* unspecified */;
   }
 
 } // namespace gold::tuples
@@ -357,24 +254,28 @@ namespace gold::tuples {
 ## `[gold.coroutines]`
 
 ### `[gold.coroutines.generator]`
-+ revamp `gold::generator`
 + `gold::invocable_generator`
 + `gold::state_generator`
++ `gold::io_generator`
 
 ### `[gold.coroutines.task]`
 + revamp `gold::task`
 
-### `[gold.coroutines.lazy]`
-+ `gold::lazy`
-
 ## `[gold.containers]`
-+ `gold::fixed_string`
 + `gold::mdspan`
 
-## `[gold.math]`
+## `[gold.numeric]`
 + `gold::basic_number` and `gold::number`
 + `gold::math::vector` and `gold::math::matrix`
 + `gold::fraction`
++ `gold::to_unsafe_bytes`
+
+## `[gold.ranges]`
++ `gold::views::adjacent`
++ `gold::views::adjacent_transform`
++ `gold::views::cycle`
++ `gold::views::concat`
++ `gold::views::cartesian_product`
 
 ## `[gold.preview.lazy_ranges]`
 + `gold::lazy_ranges::cartesian_product`
@@ -399,7 +300,7 @@ namespace gold::io {
     };
     using enum /* unspecified */;
 
-    constexpr static open_mode from_string(std::string_view) noexcept;
+    static constexpr open_mode from_string(std::string_view) noexcept;
     constexpr std::string_view to_string() const noexcept;
   };
 
@@ -417,13 +318,10 @@ namespace gold::io {
   /// file_handle
   class file_handle;
 
-  /// static_file_handle
-  class static_file_handle : public file_handle;
-
   //// File Handle Objects
-  inline static_file_handle in = /* unspecified */;
-  inline static_file_handle out = /* unspecified */;
-  inline static_file_handle err = /* unspecified */;
+  inline /* unspecified */ in = /* unspecified */;
+  inline /* unspecified */ out = /* unspecified */;
+  inline /* unspecified */ err = /* unspecified */;
 
   //// Interoperability with C++ Standard Library I/O
   file_handle from_fstream(const std::fstream&);
@@ -437,13 +335,37 @@ namespace gold::io {
 ```c++
 namespace gold::io {
 
+  //// Stream Concepts
+  /// input_stream
+  template <typename T>
+  concept input_stream = /* see description */;
+  
+  /// output_stream
+  template <typename T>
+  concept output_stream = /* see description */;
+  
+  /// stream
+  template <typename T>
+  concept stream = input_stream<T> || output_stream<T>;
+  
+  /// input_output_stream
+  template <typename T>
+  concept input_output_stream = input_stream<T> && output_stream<T>;
+  
+  /// seekable_stream
+  template <typename T>
+  concept seekable_stream = stream<T> && /* see description */;
+
   //// Stream Based Operations
   /// stream_base
   struct stream_base;
 
   /// file_stream
   class file_stream : public stream_base;
-
+  
+  /// span_stream
+  class span_stream : public stream_base;
+  
   /// memory_stream
   class memory_stream : public stream_base;
 
