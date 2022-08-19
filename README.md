@@ -9,57 +9,65 @@
 * Simplified and relaxed semantics of some entities.
 * Simple wrapper for some APIs
 
+## Status
+* `[gold++.1]` was released in December 2021
+* `[gold++.2]` was out for preview on July 31, 2022
+* `[gold++.2]` is expected to release in August 2022
+
 ## Categories
-* `[gold.format]` - Test Formatting
-* `[gold.io]` - I/O Library
-  * `[gold.io.console]` - Console API
-* `[gold.types]` - Types Library
-  * `[gold.types.basic]` - type aliases
-  * `[gold.types.name]` - readable type information
-  * `[gold.types.concepts]` - basic type concepts
-* `[gold.meta]` - Metaprogramming Utilities
+* `[gold.text]` - Text processing sublibrary
+  * `[gold.text.format]` - text formatting
+  * `[gold.text.demangling]` - name demangling
+  * `[gold.text.charset]` - character sets
+* `[gold.io]` - I/O sublibrary
+  * `[gold.io.console]` - terminal or console API
+* `[gold.meta]` - Metaprogramming sublibrary
+  * `[gold.meta.types]` - types aliases and name
+  * `[gold.meta.concepts]` - type concepts
   * `[gold.meta.traits]` - type traits
-  * `[gold.meta.traits.invocable]` - invocable type traits
+  * `[gold.meta.traits.invocable]` - invocable type trait
   * `[gold.meta.pack]` - parameter pack algorithms
   * `[gold.meta.sequence]` - meta sequences
   * `[gold.meta.sequence.values]` - value sequences
   * `[gold.meta.sequence.types]` - type sequences
-* `[gold.utility]` - General Purpose Utilities
+* `[gold.utility]`
   * `[gold.utility.ops]` - general purpose functions and casts
-  * `[gold.utility.scope_guard]`
-  * `[gold.utility.tuple]` - tuple and other tuple-related utilities
-  * `[gold.utility.any]` - type-safe type-erased type
-  * `[gold.utility.expected]` - alternative to exceptions
-  * `[gold.utility.vocabulary]` - vocabulary types
-  * `[gold.utility.demangling]` - demangling using Itanium ABI
-* `[gold.functional]` - Functional-Programming Library
-  * `[gold.functional.functions]` - function wrappers
-* `[gold.diagnostic]` - Diagnostic Library
-  * `[gold.diagnostic.assertion]`
-* `[gold.containers]` - Containers and Collections Library
-  * `[gold.containers.struct_array]`
-* `[gold.math]` - Mathematics Library
-  * `[gold.math.numbers]` - Mathematical Constants and Number Traits
-  * `[gold.math.math_int]` - Integer Arithmetic
-  * `[gold.math.random]` - Random Generation
-  * `[gold.math.ratio]` - Compile-time Ratio
-* `[gold.ranges]` - Generalized Ranges and Iterators Library
-  * `[gold.ranges.iterators]` - Iterators
-* `[gold.coroutines]` - Coroutine Library
-  * `[gold.coroutines.traits]` - Coroutine Traits and other Awaitable Concepts
-  * `[gold.coroutines.lazy]` - Lazy Evaluated Function
-  * `[gold.coroutines.task]`
-  * `[gold.coroutines.generator]`
-* `[gold.memory]` - Memory Library
+  * `[gold.utility.program]` - program behavior changing functions
+  * `[gold.utility.scope_guard]` - scope guard
+  * `[gold.utility.any]` - type-safe and type-erased type
+  * `[gold.utility.expected]` - result type
+* `[gold.functional]` - Functional sublibrary
+  * `[gold.functional.functions]` - functions type
+  * `[gold.functional.bind]` - partial binders
+  * `[gold.functional.compose]` - function composition
+  * `[gold.functional.overload]` - function overloading
+* `[gold.numeric]` - Numeric sublibrary
+  * `[gold.numeric.numbers]` - mathematical constants and numeric traits
+  * `[gold.numeric.ops]` - operations
+  * `[gold.numeric.random]` - random generation
+  * `[gold.numeric.ratio]` - compile-time ratio
+* `[gold.tuples]` - Tuple facilities sublibrary
+* `[gold.containers]` - Containers sublibrary
+  * `[gold.containers.struct]` - Structural containers
+* `[gold.ranges]` - Ranges sublibrary
+  * `[gold.ranges.iterators]` - range iterators
+  * `[gold.ranges.algorithm]` - range algorithms
+  * `[gold.ranges.to]` - range conversion
+  * `[gold.ranges.views]` - range views
+* `[gold.coro]` - Coroutine sublibrary
+  * `[gold.coro.traits]` - coroutine traits
+  * `[gold.coro.generator]` - generator coroutine
+  * `[gold.coro.lazy]` - lazy coroutine
+* `[gold.memory]` - Memory management sublibrary
   * `[gold.memory.smart_ptrs]` - smart pointers
-  * `[gold.memory.allocators]` - allocators
-  * `[gold.memory.ops]` - memory algorithms
-* `[gold.dynamic_library]`
+  * `[gold.memory.alloc]` - allocators
+  * `[gold.memory.algorithms]` - memory algorithms
+* `[gold.dynamic_library]` - dynamic module library
 * `[gold.preview.apps]`
-* `[gold.preview.graphics]`
-* `[gold.preview.lazy_ranges]`
-* `[gold.preview.linear]`
-
+* `[gold.preview.system]`
+* `[gold.preview.canvas]`
+* `[gold.preview.numeric.linear]`
+* 
 ## Roadmap
 * Improved Text Formatting
 * Windows GUI Wrapper
