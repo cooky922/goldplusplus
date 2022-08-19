@@ -13,6 +13,7 @@
 * `[gold++.1]` was released in December 2021
 * `[gold++.2]` was out for preview on July 31, 2022
 * `[gold++.2]` is expected to release in August 2022
+* `[gold++.3]` development phase is expected to commence in September 2022
 
 ## Categories
 * `[gold.text]` - Text processing sublibrary
@@ -67,7 +68,7 @@
 * `[gold.preview.system]`
 * `[gold.preview.canvas]`
 * `[gold.preview.numeric.linear]`
-* 
+
 ## Roadmap
 * Improved Text Formatting
 * Windows GUI Wrapper
