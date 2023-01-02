@@ -87,6 +87,8 @@ Revamp Text Formatting
 + `gold::shared_ptr` (unsynchronized version for compile-time support)
 + `gold::cloned_ptr`
 + `gold::borrowed_ptr`
++ `gold::out_ptr[_t]`
++ `gold::inout_ptr[_t]`
 
 ```c++
 namespace gold {
@@ -269,6 +271,9 @@ namespace gold::tuples {
 + `gold::math::vector` and `gold::math::matrix`
 + `gold::fraction`
 + `gold::to_unsafe_bytes`
++ `gold::basic_int_2x` and `gold::basic_uint_2x`
++ `gold::basic_int_nx` and `gold::basic_uint_nx`
++ `gold::float_parts`
 
 ## `[gold.ranges]`
 + `gold::views::adjacent`
