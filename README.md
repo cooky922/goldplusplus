@@ -1,6 +1,6 @@
 # gold++ 
 * A custom library written by an author :>
-* It requires at least C++23 support and GCC 12 compiler
+* It requires at least C++23 support and GCC 13 compiler
 * It also requires windows platform
 * This project is still undergoing construction
 
@@ -13,7 +13,7 @@
 * `[gold++.1]` was released in December 2021
 * `[gold++.2]` was out for preview on July 31, 2022
 * `[gold++.2]` is expected to release in August 2022
-* `[gold++.3]` development phase is expected to commence in September 2022
+* `[gold++.3]` development phase commenced in November 2022
 
 ## Categories
 * `[gold.text]` - Text processing sublibrary
@@ -44,7 +44,7 @@
   * `[gold.functional.overload]` - function overloading
 * `[gold.numeric]` - Numeric sublibrary
   * `[gold.numeric.numbers]` - mathematical constants and numeric traits
-  * `[gold.numeric.ops]` - operations
+  * `[gold.numeric.ops]` - arithmetic and other operations
   * `[gold.numeric.random]` - random generation
   * `[gold.numeric.ratio]` - compile-time ratio
 * `[gold.tuples]` - Tuple facilities sublibrary
