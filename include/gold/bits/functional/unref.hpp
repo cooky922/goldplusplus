@@ -1,6 +1,6 @@
 // <gold/bits/functional/unref.hpp> - gold++ library
 
-// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+// Copyright (C) [ 2021 - 2024 ] - present Desmond Gold
 
 // note: internal header
 
@@ -12,15 +12,17 @@
 
 namespace gold {
 
-    /// unref
+    /// unwrap_ref
     // unwrapping reference wrapper object by calling get, otherwise it will be forwarded
     template <typename T>
-    constexpr T&& unref(T&& t) {
+    [[gnu::always_inline]]
+    constexpr T&& unwrap_ref(T&& t) noexcept {
         return std::forward<T>(t);
     }
 
     template <typename T>
-    constexpr T& unref(std::reference_wrapper<T> t) {
+    [[gnu::always_inline]]
+    constexpr T& unwrap_ref(std::reference_wrapper<T> t) noexcept {
         return t.get();
     }
 

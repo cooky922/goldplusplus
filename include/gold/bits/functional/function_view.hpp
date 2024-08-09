@@ -15,7 +15,9 @@
 #include <gold/bits/memory/voidify.hpp>
 #include <gold/bits/memory/ops.hpp>
 #include <gold/bits/functional/invoke.hpp>
+#include <gold/bits/assume.hpp>
 #include <gold/bits/non_type.hpp>
+#include <gold/bits/type_traits/conditional.hpp>
 #include <gold/bits/unreachable.hpp>
 
 namespace gold {
@@ -28,6 +30,10 @@ namespace gold {
             stateless,
             none
         };
+
+        /// __functional::qualified_function
+        template <typename T>
+        concept qualified_function = std::is_function_v<T>;
 
     } // namespace __functional
 
@@ -75,7 +81,7 @@ namespace gold {
             }();
 
             template <typename F>
-            using maybe_const_t = std::conditional_t<Const, const F, F>;
+            using maybe_const_t = gold::conditional_t<Const, const F, F>;
 
           public:
             /// default ctor
@@ -87,7 +93,7 @@ namespace gold {
 
             /// ctor: taking already-function references
             template <typename F>
-                requires std::is_function_v<std::remove_cvref_t<F>> &&
+                requires __functional::qualified_function<std::remove_cvref_t<F>> &&
                          s_is_invocable_using_<maybe_const_t<std::remove_cvref_t<F>>&>
             constexpr fn_view_base(F&& f) noexcept
             : m_state_(nullptr), m_stateless_fn_(gold::voidify(f)),
@@ -95,14 +101,18 @@ namespace gold {
 
             /// ctor: taking already-function pointer
             template <typename F>
-                requires std::is_function_v<F> && s_is_invocable_using_<F>
+                requires __functional::qualified_function<F>
+                      && s_is_invocable_using_<F>
             constexpr fn_view_base(F* f) noexcept
             : m_state_(nullptr), m_stateless_fn_(f),
-              m_kind_(__functional::fn_view_kind::stateless) {}
+              m_kind_(__functional::fn_view_kind::stateless) {
+                if (f == nullptr)
+                    m_kind_ = __functional::fn_view_kind::none;
+              }
 
             /// ctor: taking any object convertible to function pointer
             template <typename F>
-                requires (!std::is_function_v<std::remove_cvref_t<F>>)
+                requires (!__functional::qualified_function<std::remove_cvref_t<F>>)
                         && std::is_convertible_v<F, R(*)(Args...) noexcept(Noexcept)>
             constexpr fn_view_base(F&& f) noexcept
             : m_state_(nullptr), m_stateless_fn_(std::forward<F>(f)),
@@ -145,7 +155,7 @@ namespace gold {
 
             /// ctor: NTTP free function pointer
             template <auto* M>
-                requires std::is_function_v<std::remove_pointer_t<decltype(M)>>
+                requires __functional::qualified_function<std::remove_pointer_t<decltype(M)>>
             constexpr fn_view_base(non_type_t<M>) noexcept
             : m_state_(nullptr), m_stateless_fn_(M), m_kind_(__functional::fn_view_kind::stateless) {}
 
@@ -155,7 +165,8 @@ namespace gold {
 
             /// ctor: non-function not convertible to function pointer
             template <typename F>
-                requires (!std::is_function_v<std::remove_cvref_t<F>>)
+                requires std::is_reference_v<F>
+                    && (!__functional::qualified_function<std::remove_cvref_t<F>>)
                     && s_is_invocable_using_<maybe_const_t<std::remove_cvref_t<F>>&>
                     && (!std::is_convertible_v<F, R(*)(Args...) noexcept(Noexcept)>)
             constexpr fn_view_base(F&& f) noexcept
@@ -173,10 +184,15 @@ namespace gold {
 
             /// assignment
             template <typename F>
-            constexpr fn_view_base& operator=(F&& f) noexcept {
+            constexpr fn_view_base& operator=(F&& f) noexcept
+                requires requires { fn_view_base(std::forward<F>(f)); }
+            {
                 fn_view_base(std::forward<F>(f)).do_swap(*this);
                 return *this;
             }
+
+            template <typename F>
+            void operator=(F&&) = delete;
 
             /// do_swap
             constexpr void do_swap(fn_view_base& other) noexcept {
@@ -246,8 +262,7 @@ namespace gold {
             constexpr R operator()(Args... args) const noexcept(Noexcept) {
 
                 // precondition, should not be empty, otherwise undefined behaviour
-                if (do_is_empty())
-                    gold::unreachable();
+                gold::assume(!do_is_empty());
 
                 switch (m_kind_) {
                     case __functional::fn_view_kind::stateless:
@@ -263,6 +278,7 @@ namespace gold {
 
         };
 
+        /// TODO: for variadic args
         template <typename R, typename... Args, bool Const, bool Noexcept>
         class fn_view_base<R(Args......), Const, Noexcept> {
 
@@ -272,7 +288,7 @@ namespace gold {
 
     /// function_view
     template <typename F>
-        requires std::is_function_v<F>
+        requires __functional::qualified_function<F>
     class function_view<F>
     : private __functional::fn_view_base<
         gold::remove_cvref_qualifier_noexcept_t<F>,
@@ -326,13 +342,13 @@ namespace gold {
     >;
 
     template <auto* F>
-        requires std::is_function_v<std::remove_pointer_t<decltype(F)>>
+        requires __functional::qualified_function<std::remove_pointer_t<decltype(F)>>
     function_view(non_type_t<F>) -> function_view<std::remove_pointer_t<decltype(F)>>;
 
     template <auto F, typename T = decltype(F)>
         requires std::is_member_pointer_v<T>
     function_view(non_type_t<F>, auto&) -> function_view<
-        std::conditional_t<
+        gold::conditional_t<
             std::is_member_function_pointer_v<T>,
             gold::remove_reference_qualifier_t<gold::pm_member_type_t<T>>,
             gold::pm_member_type_t<T>()
