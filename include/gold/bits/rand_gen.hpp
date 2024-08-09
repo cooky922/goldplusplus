@@ -1,6 +1,6 @@
 // <gold/bits/rand_gen.hpp> - gold++ library
 
-// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+// Copyright (C) [ 2021 - 2023 ] - present Desmond Gold
 
 // note: internal header
 
@@ -59,7 +59,7 @@ namespace gold {
         /// copy ctor [deleted]
         basic_random_generator(const basic_random_generator&) = delete;
 
-        /// move ctor [deleted]
+        /// move ctor
         basic_random_generator(basic_random_generator&&) noexcept = default;
 
         /// ctor taking a seed

@@ -1,6 +1,6 @@
 // <gold/bits/to_integer.hpp> - gold++ library
 
-// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+// Copyright (C) [ 2021 - 2024 ] - present Desmond Gold
 
 // note: internal header
 
@@ -15,11 +15,13 @@
 
 namespace gold::__ext {
 
-    /// to_integer
+    /// __ext::to_integer
     template <std::integral T = int>
     constexpr T to_integer(std::string_view sv, std::size_t base = 10) {
         T result = 0;
         for (auto c : sv) {
+            if (c == '\'')
+                continue;
             result *= base;
             result += [&] {
                 if (gold::char_class::is_digit(c))
@@ -32,7 +34,7 @@ namespace gold::__ext {
         return result;
     }
 
-    /// to_integer_with_prefix
+    /// __ext::to_integer_with_prefix
     template <std::integral T = int>
     constexpr T to_integer_with_prefix(std::string_view sv) {
         if (sv.starts_with("0x") || sv.starts_with("0X")) {

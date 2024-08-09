@@ -1,6 +1,6 @@
 // <gold/bits/void_like.hpp> - gold++ library
 
-// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+// Copyright (C) [ 2021 - 2023 ] - present Desmond Gold
 
 // note: internal header
 
@@ -12,8 +12,8 @@ namespace gold {
 
     /// void_like
     struct void_like {
-        constexpr void_like(...) {}
-        constexpr void_like operator()(...) const noexcept { return {}; }
+        [[gnu::always_inline]] constexpr void_like(auto&&...) noexcept {}
+        [[gnu::always_inline]] static constexpr void_like operator()(auto&&...) noexcept { return {}; }
     };
 
     /// void_like_v

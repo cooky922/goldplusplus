@@ -1,6 +1,6 @@
 // <gold/bits/casts.hpp> - gold++ library
 
-// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+// Copyright (C) [ 2021 - 2024 ] - present Desmond Gold
 
 // note: internal header
 
@@ -10,7 +10,7 @@
 
 #include <concepts>
 #include <bits/move.h>
-#include <gold/bits/type_traits/type_transformations.hpp>
+#include <gold/bits/type_traits/conditional.hpp>
 
 namespace gold {
 
@@ -39,21 +39,12 @@ namespace gold {
 
     constexpr void as_mutable(const auto&&) = delete;
 
-    /// unmove [ dangerous! ]
+    /// as_const
     template <typename T>
-    [[nodiscard, deprecated("'gold::unmove' is dangerous")]]
-    constexpr std::remove_reference_t<T>& unmove(T&& t) { return t; }
+    [[gnu::always_inline]]
+    inline constexpr const T& as_const(T& op) noexcept { return op; }
 
-    /// unforward [ dangerous! ]
-    template <typename T>
-        requires std::constructible_from<std::remove_reference_t<T>, T&&>
-    [[nodiscard, deprecated("'gold::unforward' is dangerous")]]
-    constexpr std::remove_reference_t<T>&
-    unforward(T&& t)
-        noexcept(std::is_nothrow_constructible_v<std::remove_reference_t<T>, T&&>)
-    {
-        return std::forward<T>(t);
-    }
+    constexpr void as_const(const auto&&) = delete;
 
     /// decay_copy
     template <typename T>
@@ -73,24 +64,6 @@ namespace gold {
         noexcept(std::is_nothrow_convertible_v<T, std::decay_t<T>>)
     {
         return auto(std::move(t));
-    }
-
-    namespace __utility {
-
-        template <typename T, typename U>
-        using forwarded_like_type = std::conditional_t<
-            std::is_lvalue_reference_v<T>,
-            std::remove_reference_t<U>&,
-            std::remove_reference_t<U>&&
-        >;
-
-    } // namespace __utility
-
-    /// forward_like
-    template <typename T, typename U>
-    [[gnu::always_inline]]
-    inline constexpr __utility::forwarded_like_type<T, U> forward_like(U&& arg) noexcept {
-        return std::forward<__utility::forwarded_like_type<T, U>>(std::forward<U>(arg));
     }
 
 } // namespace gold

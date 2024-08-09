@@ -11,7 +11,7 @@
 namespace gold {
 
     /// unreachable
-    [[noreturn]] constexpr void unreachable() { __builtin_unreachable(); }
+    [[noreturn, gnu::always_inline]] inline constexpr void unreachable() noexcept { __builtin_unreachable(); }
 
 } // namespace gold
 

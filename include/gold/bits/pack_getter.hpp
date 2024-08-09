@@ -1,6 +1,6 @@
 // <gold/bits/pack_getter.hpp> - gold++ library
 
-// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+// Copyright (C) [ 2021 - 2024 ] - present Desmond Gold
 
 // note: internal header
 
@@ -25,7 +25,7 @@ namespace gold::__pack {
     struct indexer<std::index_sequence<Is...>, Ts...>
     : indexed<Is, Ts> ... {};
 
-    /// __pack::select_arg [for uneval context]
+    /// [uneval] __pack::select_arg
     template <std::size_t I, typename T>
     auto select_arg(const indexed<I, T>&) -> indexed<I, T>;
 
@@ -49,6 +49,7 @@ namespace gold::__pack {
     struct get_at_impl<std::index_sequence<Is...>> {
 
         template <typename Arg>
+        [[gnu::always_inline]]
         static constexpr decltype(auto) at(decltype((Is, gold::void_like{})) ..., Arg&& arg, ...) noexcept {
             return std::forward<Arg>(arg);
         }

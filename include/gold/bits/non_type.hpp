@@ -1,6 +1,6 @@
 // <gold/bits/non_type.hpp> - gold++ library
 
-// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+// Copyright (C) [ 2021 - 2024 ] - present Desmond Gold
 
 // note: internal header
 
@@ -13,17 +13,19 @@ namespace gold {
     /// non_type_t
     template <auto N>
     struct non_type_t {
-        /// ctor
-        explicit constexpr non_type_t() noexcept = default;
 
-        /// value [static]
+        // ctor
+        explicit non_type_t() noexcept = default;
+
+        // value [static]
         inline static constexpr auto value = N;
 
-        /// type [type-member]
+        // type [type-member]
         using type = decltype(N);
 
-        /// operator type
+        // operator type
         constexpr operator type() const noexcept { return value; }
+
     };
 
     /// non_type
