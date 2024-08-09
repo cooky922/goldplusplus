@@ -1,6 +1,6 @@
 // <gold/bits/concepts/allocator.hpp> - gold++ library
 
-// Copyright (C) 2021 - present Desmond Gold
+// Copyright (C) [ 2021 - 2024 ] - present Desmond Gold
 
 // note: internal header
 
@@ -27,6 +27,12 @@ namespace gold {
             { alloc.deallocate(ptr, n) };
         };
 
-}
+    /// stateless_allocator
+    template <typename Alloc>
+    concept stateless_allocator =
+        std::default_initializable<Alloc> &&
+        std::allocator_traits<Alloc>::is_always_equal::value;
+
+} // namespace gold
 
 #endif // __GOLD_BITS_CONCEPTS_ALLOCATOR_HPP

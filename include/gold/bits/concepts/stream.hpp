@@ -48,7 +48,7 @@ namespace gold {
     concept range_basic_stream_insertable =
         std::ranges::range<T>
      && std::ranges::sized_range<T>
-     && !qualified_basic_string<T, C>
+     && !basic_string_like<T, C>
      && basic_stream_insertable<std::ranges::range_value_t<T>, C>
      && char_type<C>;
 

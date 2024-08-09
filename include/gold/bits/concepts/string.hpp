@@ -1,6 +1,6 @@
 // <gold/bits/concepts/string.hpp> - gold++ library
 
-// Copyright (C) 2021 - present Desmond Gold
+// Copyright (C) [ 2021 - 2023 ] - present Desmond Gold
 
 // note: internal header
 
@@ -9,40 +9,45 @@
 #define __GOLD_BITS_CONCEPTS_STRING_HPP
 
 #include <string_view>
-#include <bits/stringfwd.h>
-
+#include <bits/ranges_base.h>
+#include <gold/bits/concepts/class_or_union_or_enum.hpp>
 #include <gold/bits/concepts/types.hpp>
 
 namespace gold {
 
-    /// enable_qualified_string
-    template <typename T>
-    inline constexpr bool enable_qualified_string = false;
+    /// disable_string_like
+    template <typename>
+    inline constexpr bool disable_string_like = false;
 
-    template <typename CharT, typename Traits, typename Alloc>
-    inline constexpr bool enable_qualified_string<std::basic_string<CharT, Traits, Alloc>> = true;
+    namespace __concepts {
 
-    template <typename CharT, typename Traits>
-    inline constexpr bool enable_qualified_string<std::basic_string_view<CharT, Traits>> = true;
+        /// __concepts::basic_string_like_impl
+        template <typename T, typename C>
+        concept basic_string_like_impl =
+             (!disable_string_like<T>) &&
+             gold::char_type<C> && (
+            (std::is_pointer_v<T>
+                                && std::same_as<C, std::remove_const_t<std::remove_pointer_t<T>>>) ||
+            (std::is_array_v<T> && (std::is_bounded_array_v<T> && std::extent_v<T> != 0 || true)
+                                && std::same_as<C, std::remove_const_t<std::remove_extent_t<T>>>)  ||
+            (__concepts::class_or_union<T>
+                                && std::convertible_to<T, std::basic_string_view<C>>
+                                && std::ranges::contiguous_range<T>
+                                && std::ranges::sized_range<T>));
 
-    /// qualified_basic_string
+    } // namespace __concepts
+
+    /// basic_string_like
     template <typename T, typename C>
-    concept qualified_basic_string =
-        (std::is_array_v<std::remove_cvref_t<T>>
-        && std::same_as<C, std::remove_cvref_t<std::remove_extent_t<std::remove_cvref_t<T>>>>)
-     || (std::is_pointer_v<std::remove_cvref_t<T>>
-        && std::same_as<C, std::remove_cvref_t<std::remove_pointer_t<std::remove_cvref_t<T>>>>)
-     || (std::convertible_to<T, std::basic_string_view<C>>
-        && enable_qualified_string<T>)
-     && char_type<C>;
+    concept basic_string_like = __concepts::basic_string_like_impl<std::remove_cvref_t<T>, C>;
 
-    /// qualified_string
+    /// string_like
     template <typename T>
-    concept qualified_string = qualified_basic_string<T, char>;
+    concept string_like = basic_string_like<T, char>;
 
-    /// qualified_wstring
+    /// wstring_like
     template <typename T>
-    concept qualified_wstring = qualified_basic_string<T, wchar_t>;
+    concept wstring_like = basic_string_like<T, wchar_t>;
 
 } // namespace gold
 
