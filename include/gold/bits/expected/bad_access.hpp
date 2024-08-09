@@ -8,14 +8,10 @@
 #ifndef __GOLD_BITS_EXPECTED_BAD_ACCESS_HPP
 #define __GOLD_BITS_EXPECTED_BAD_ACCESS_HPP
 
-#include <exception>
-#include <gold/type_traits>
+#include <bits/exception.h>
+#include <bits/move.h>
 
 namespace gold {
-
-    /// expected [fwd decl]
-    template <typename, typename>
-    class expected;
 
     /// bad_unexpected_access
     class bad_unexpected_access : public std::exception {
@@ -23,7 +19,7 @@ namespace gold {
         const char* what() const noexcept override { return "bad unexpected access"; }
     };
 
-    /// bad_expected_access [fwd decl]
+    /// bad_expected_access
     template <typename>
     class bad_expected_access;
 
@@ -33,30 +29,51 @@ namespace gold {
       protected:
         bad_expected_access() noexcept = default;
         bad_expected_access(const bad_expected_access&) = default;
-        bad_expected_access(bad_expected_access&&) = default;
+        bad_expected_access(bad_expected_access&&) noexcept = default;
         bad_expected_access& operator=(const bad_expected_access&) = default;
-        bad_expected_access& operator=(bad_expected_access&&) = default;
+        bad_expected_access& operator=(bad_expected_access&&) noexcept = default;
 
       public:
         const char* what() const noexcept override { return "bad expected access"; }
     };
 
-    /// bad_expected_access<T>
+    /// bad_expected_access - main definition
     template <typename E>
-        requires (!std::is_void_v<E>)
-    class bad_expected_access<E> : public bad_expected_access<void> {
+    class bad_expected_access : public bad_expected_access<void> {
       private:
         E m_value_;
 
       public:
-        explicit bad_expected_access(E e)
-        : m_value_(std::move(e)) {}
+        explicit bad_expected_access(E e) : m_value_(std::move(e)) {}
 
-        E& error() & noexcept { return m_value_; }
-        E&& error() && noexcept { return std::move(m_value_); }
-        const E& error() const& noexcept { return m_value_; }
-        const E&& error() const&& noexcept { return std::move(m_value_); }
+        [[nodiscard]] E& error() & noexcept { return m_value_; }
+        [[nodiscard]] const E& error() const& noexcept { return m_value_; }
+        [[nodiscard]] E&& error() && noexcept { return std::move(m_value_); }
+        [[nodiscard]] const E&& error() const&& noexcept { return std::move(m_value_); }
     };
+
+    namespace __expected {
+
+        /// __expected::bad_unexpected_access_exception
+        [[noreturn]] inline void bad_unexpected_access_exception() {}
+
+        /// __expected::throw_bad_unexpected_access
+        [[noreturn]] constexpr void throw_bad_unexpected_access(bool b = true) {
+            if consteval { if (b) bad_unexpected_access_exception(); }
+            else { throw bad_unexpected_access(); }
+        }
+
+        /// __expected::bad_expected_access_exception
+        inline void bad_expected_access_exception() {}
+
+        /// __expected::throw_bad_expected_access
+        template <typename E>
+        [[noreturn]] constexpr void throw_bad_expected_access(E e, bool b = true) {
+            if consteval { if (b) bad_expected_access_exception(); }
+            else { throw bad_expected_access<E>(std::move(e)); }
+        }
+
+    } // namespace __expected
 
 } // namespace gold
 

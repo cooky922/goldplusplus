@@ -1,6 +1,6 @@
 // <gold/bits/expected/unexpected.hpp> - gold++ library
 
-// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+// Copyright (C) [ 2021 - 2024 ] - present Desmond Gold
 
 // note: internal header
 
@@ -8,13 +8,15 @@
 #ifndef __GOLD_BITS_EXPECTED_UNEXPECTED_HPP
 #define __GOLD_BITS_EXPECTED_UNEXPECTED_HPP
 
-#include <initializer_list>
 #include <concepts>
+#include <initializer_list>
+#include <gold/bits/__util/like_t.hpp>
+#include <gold/bits/expected/utils.hpp>
 
 namespace gold {
 
     /// unexpected
-    template <typename E>
+    template <__expected::can_be_unexpected E>
     class unexpected {
       private:
         E m_value_;
@@ -26,12 +28,12 @@ namespace gold {
 
         template <typename... Args>
             requires std::constructible_from<E, Args...>
-        constexpr explicit unexpected(std::in_place_t, Args&&... args)
+        explicit constexpr unexpected(std::in_place_t, Args&&... args)
         : m_value_(std::forward<Args>(args)...) {}
 
         template <typename U, typename... Args>
-            requires std::constructible_from<std::initializer_list<U>, Args...>
-        constexpr explicit unexpected(std::in_place_t, std::initializer_list<U> il, Args&&... args)
+            requires std::constructible_from<std::initializer_list<U>&, Args...>
+        explicit constexpr unexpected(std::in_place_t, std::initializer_list<U> il, Args&&... args)
         : m_value_(il, std::forward<Args>(args)...) {}
 
         template <typename Err = E>
@@ -42,30 +44,37 @@ namespace gold {
         constexpr unexpected& operator=(const unexpected&) = default;
         constexpr unexpected& operator=(unexpected&&) = default;
 
-        constexpr E& value() & noexcept { return m_value_; }
-        constexpr E&& value() && noexcept { return std::move(m_value_); }
-        constexpr const E& value() const& noexcept { return m_value_; }
-        constexpr const E&& value() const&& noexcept { return std::move(m_value_); }
+        constexpr ~unexpected() = default;
 
-        constexpr void swap(unexpected& other) noexcept {
-            using std::swap;
-            swap(m_value_, other.m_value_);
+        template <typename Self>
+        [[nodiscard]] constexpr decltype(auto) error(this Self&& self) noexcept {
+            return std::forward_like<Self>(self.m_value_);
         }
 
-        constexpr bool operator==(const unexpected&) const noexcept = default;
-        constexpr auto operator<=>(const unexpected&) const noexcept = default;
+        constexpr void swap(unexpected& other) noexcept(std::is_nothrow_swappable_v<E>) {
+            std::ranges::swap(m_value_, other.m_value_);
+        }
+
+        friend constexpr void swap(unexpected& lhs, unexpected& rhs) noexcept(noexcept(lhs.swap(rhs))) {
+            lhs.swap(rhs);
+        }
+
+        template <typename G>
+        friend constexpr bool operator==(const unexpected& lhs, const unexpected<G>& rhs) {
+            return lhs.m_value_ == rhs.m_value_;
+        }
     };
 
     template <typename E>
     unexpected(E) -> unexpected<E>;
 
-    /// unexpect_t
-    struct unexpect_t {
-        constexpr explicit unexpect_t() = default;
-    };
+    namespace __expected {
 
-    /// unexpect
-    inline constexpr unexpect_t unexpect {};
+        /// __expected::is_unexpected_v<Unexpected>
+        template <typename E>
+        inline constexpr bool is_unexpected_v<unexpected<E>> = true;
+
+    } // namespace __expected
 
 } // namespace gold
 
