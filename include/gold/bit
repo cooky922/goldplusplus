@@ -1,34 +1,97 @@
 // <gold/bit> - gold++ library
 
-// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+// Copyright (C) [ 2021 - 2024 ] - present Desmond Gold
 
 #pragma once
 #ifndef __GOLD_BIT
 #define __GOLD_BIT
 
-#include <cstddef>
 #include <bit>
 #include <array>
+#include <gold/basic_types>
+#include <gold/bits/concepts/types.hpp>
 
 namespace gold {
 
-    namespace __bit {
+    /// bit_reverse
+    template <std::unsigned_integral T>
+    constexpr T bit_reverse(T x) noexcept {
+        // TODO: optimize
+        T result = 0;
+        // assume: CHAR_BIT == 8 and T has no padding
+        for (int i = 0; i < 8 * sizeof(T); ++i) {
+            result <<= 1;
+            result  |= x & 1;
+            x >>= 1;
+        }
+        return result;
+    }
 
-        /// __bit::trivially_copyable
-        template <typename T>
-        concept trivially_copyable = std::is_trivially_copyable_v<std::remove_cvref_t<T>>;
+    /// bit_repeat
+    template <std::unsigned_integral T>
+    constexpr T bit_repeat(T x, int n) noexcept {
+        // TODO: optimize
+        T result = 0;
+        for (int i = 0; i < 8 * sizeof(T); ++i) {
+            result |= ((x >> (i % n)) & 1) << i;
+        }
+        return result;
+    }
 
-        /// __bit::bit_castable
-        template <typename T, typename U>
-        concept bit_castable = (sizeof(T) == sizeof(U))
-                            && trivially_copyable<T>
-                            && trivially_copyable<U>;
+    /// next_bit_permutation
+    template <std::unsigned_integral T>
+    constexpr T next_bit_permutation(T x) noexcept {
+        const int c = std::popcount(x);
+        while (x != 0 && std::popcount(++x) != c);
+        return x;
+    }
 
+    /// prev_bit_permutation
+    template <std::unsigned_integral T>
+    constexpr T prev_bit_permutation(T x) noexcept {
+        const int c = std::popcount(x);
+        while (x != 0 && std::popcount(--x) != c);
+        return x;
+    }
 
-    } // namespace __bit
+    /// bit_compressr
+    template <std::unsigned_integral T>
+    constexpr T bit_compressr(T x, T m) noexcept {
+        T result = 0;
+        for (int i = 0, j = 0; i < 8 * sizeof(T); ++i) {
+            bool mask_bit = (m >> i) & 1;
+            result |= (mask_bit & (x >> i)) << j;
+            j += mask_bit;
+        }
+        return result;
+    }
+
+    /// bit_compressl
+    template <std::unsigned_integral T>
+    constexpr T bit_compressl(T x, T m) noexcept {
+        return gold::bit_reverse(gold::bit_compressr(gold::bit_reverse(x), gold::bit_reverse(m)));
+    }
+
+    /// bit_expandr
+    template <std::unsigned_integral T>
+    constexpr T bit_expandr(T x, T m) noexcept {
+        T result = 0;
+        for (int i = 0, j = 0; i < 8 * sizeof(T); ++i) {
+            bool mask_bit = (m >> i) & 1;
+            result |= (mask_bit & (x >> j)) << i;
+            j += mask_bit;
+        }
+        return result;
+    }
+
+    /// bit_expandl
+    template <std::unsigned_integral T>
+    constexpr T bit_expandl(T x, T m) noexcept {
+        return gold::bit_reverse(gold::bit_expandr(gold::bit_reverse(x), gold::bit_reverse(m)));
+    }
 
     /// to_bytes
-    template <__bit::trivially_copyable T>
+    template <gold::trivially_copyable T>
     constexpr auto to_bytes(const T& obj) noexcept {
         return std::bit_cast<
             std::array<const std::byte, sizeof(T)>
@@ -36,7 +99,7 @@ namespace gold {
     }
 
     /// to_writable_bytes
-    template <__bit::trivially_copyable T>
+    template <gold::trivially_copyable T>
     constexpr auto to_writable_bytes(T&& obj) noexcept {
         return std::bit_cast<
             std::array<std::byte, sizeof(T)>
@@ -44,13 +107,13 @@ namespace gold {
     }
 
     /// from_bytes
-    template <__bit::trivially_copyable T, std::size_t N>
+    template <gold::trivially_copyable T, std::size_t N>
         requires (sizeof(T) == N)
     constexpr auto from_bytes(std::array<std::byte, N> arr) noexcept {
         return std::bit_cast<T>(arr);
     }
 
-    template <__bit::trivially_copyable T, std::size_t N>
+    template <gold::trivially_copyable T, std::size_t N>
         requires (sizeof(T) == N)
     constexpr auto from_bytes(std::array<const std::byte, N> arr) noexcept {
         return std::bit_cast<const T>(arr);

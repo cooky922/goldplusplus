@@ -1,0 +1,54 @@
+// <gold/print> - gold++ library
+
+// Copyright (C) [ 2021 - 2024 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_PRINT
+#define __GOLD_PRINT
+
+#include <gold/format>
+
+namespace gold {
+
+    namespace __print {
+
+        /// __print::SetConsoleOutputCP
+        extern "C" void SetConsoleOutputCP(unsigned int);
+
+        /// __print::GetConsoleOutputCP
+        extern "C" unsigned int GetConsoleOutputCP();
+
+        /// __print::vprint_impl
+        template <bool NewLine>
+        void vprint_impl(std::string_view fmt, format_args args) {
+            if (__print::GetConsoleOutputCP() != 65001)
+                __print::SetConsoleOutputCP(65001);
+            std::string result = gold::vformat(fmt, args);
+            if constexpr (NewLine)
+                __builtin_printf("%s\n", result.c_str());
+            else
+                __builtin_printf("%s", result.c_str());
+        }
+
+    } // namespace __print
+
+    /// vprint
+    void vprint(std::string_view fmt, format_args args) {
+        __print::vprint_impl<false>(fmt, args);
+    }
+
+    /// print
+    template <typename... Args>
+    void print(format_string<Args...> fmt, Args&&... args) {
+        __print::vprint_impl<false>(fmt.get(), gold::make_format_args(args...));
+    }
+
+    /// println
+    template <typename... Args>
+    void println(format_string<Args...> fmt, Args&&... args) {
+        __print::vprint_impl<true>(fmt.get(), gold::make_format_args(args...));
+    }
+
+} // namespace gold
+
+#endif // __GOLD_PRINT

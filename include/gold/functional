@@ -6,44 +6,36 @@
 #ifndef __GOLD_FUNCTIONAL
 #define __GOLD_FUNCTIONAL
 
-#include <gold/bits/functional/overload.hpp>
+#include <gold/bits/functional/bind_partial.hpp>
+#include <gold/bits/functional/compose.hpp>
 #include <gold/bits/functional/invoke.hpp>
+#include <gold/bits/functional/try_invoke.hpp>
+#include <gold/bits/functional/overload.hpp>
+#include <gold/bits/functional/unref.hpp>
+#include <gold/bits/functional/convert_as.hpp>
+#include <gold/bits/functional/construct_object.hpp>
 
 namespace gold {
 
-    /// make_overload - defined in  [ <gold/bits/functional/overload.hpp> ]
-    /// unref
-    /// invoke - defined in [ <gold/bits/functional/invoke.hpp> ]
-    /// invoke_r - defined in [ <gold/bits/functional/invoke.hpp> ]
-    /// void_like - defined in [ <gold/bits/functional/invoke.hpp> ]
-    /// try_invoke - defined in [ <gold/bits/functional/invoke.hpp> ]
+    //// Overloading [ defined in <gold/bits/functional/overload.hpp> ]
+    /// make_overload
 
-    /// bind_back - such that bind_back(f, args_0...)(args_1...) == f(args_1..., args_0...)
-    template <typename F, typename... Args>
-    constexpr auto bind_back(F&& f, Args&&... args) {
-        return [
-            f = std::forward<F>(f),
-            ...args = std::forward<Args>(args)
-        ]<typename... Ts>(Ts&&... first_args) {
-            return gold::invoke(
-                f, std::forward<Ts>(first_args)..., args...
-            );
-        };
-    }
+    //// Invocation Operations
+    /// invoke[_r]           [ defined in <gold/bits/functional/invoke.hpp>     ]
+    /// consteval_invoke[_r] [ defined in <gold/bits/functional/invoke.hpp>     ]
+    /// try_invoke           [ defined in <gold/bits/functional/try_invoke.hpp> ]
 
+    //// Partial Application [ defined in <gold/bits/functional/bind_partial.hpp> ]
+    /// bind_front
+    /// bind_back
     /// bind_rest
-    template <typename F, typename... Args>
-    constexpr auto bind_rest(F&& f, Args&&... args) {
-        return [f = std::forward<F>(f), ...args = std::forward<Args>(args)]<typename T>(T&& arg) {
-            return gold::invoke(
-                f, std::forward<T>(arg), args...
-            );
-        };
-    }
 
+    //// Function Composition [ defined in <gold/bits/functional/compose.hpp> ]
     /// compose
-    /// ex: compose(f, g, h)(x) ==
 
+    //// Other Functional Utilities
+    /// unref     [ defined in <gold/bits/functional/unref.hpp> ]
+    /// void_like [ defined in <gold/bits/void_like.hpp>        ]
 
 } // namespace gold
 

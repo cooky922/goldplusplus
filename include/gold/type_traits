@@ -1,11 +1,12 @@
 // <gold/type_traits> - gold++ library
 
-// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+// Copyright (C) [ 2021 - 2024 ] - present Desmond Gold
 
 #pragma once
 #ifndef __GOLD_TYPE_TRAITS
 #define __GOLD_TYPE_TRAITS
 
+#include <gold/bits/type_traits/constant.hpp>
 #include <gold/bits/type_traits/helper_class.hpp>
 #include <gold/bits/type_traits/type_classification.hpp>
 #include <gold/bits/type_traits/type_properties.hpp>
@@ -13,12 +14,12 @@
 #include <gold/bits/type_traits/template_instantiation.hpp>
 #include <gold/bits/type_traits/specialization_of.hpp>
 #include <gold/bits/type_traits/type_transformations.hpp>
+#include <gold/bits/type_traits/base_traits.hpp>
 #include <gold/bits/type_traits/detection.hpp>
 
 namespace gold {
 
     //// Helper Utilities
-    /// type_sentinel
     /// types_inherited
     /// size_constant[_v]
     /// index_constant[_v]
@@ -39,6 +40,13 @@ namespace gold {
     /// is_any_of[_v]
     /// is_narrowing_convertible[_v]
 
+    //// Derive-Base Type Traits
+    /// bases[_t]
+    /// direct_bases[_t]
+    /// has_bases[_v]
+    /// is_direct_base_of[_v]
+    /// is_indirect_base_of[_v]
+
     //// Template Instantiation
     /// is_template_instantiation[_v]
 
@@ -47,8 +55,6 @@ namespace gold {
 
     //// Type Transformation
     /// conditionals[_t]
-    /// decay[_t]
-    /// decay_if[_t]
     /// type_apply[_t]
     /// type_apply_if[_t]
     /// disable_if[_t]

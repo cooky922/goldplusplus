@@ -1,76 +1,66 @@
 // <gold/basic_types> - gold++ library
 
-// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+// Copyright (C) [ 2021 - 2023 ] - present Desmond Gold
 
 #pragma once
 #ifndef __GOLD_BASIC_TYPES
 #define __GOLD_BASIC_TYPES
 
 #include <cstddef>
-#include <cstdint>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
 namespace gold {
 
-    /// signed ints
+    //// signed ints
     using int_t    = int;
     using short_t  = short;
-    using int8_t   = std::int8_t;
-    using int16_t  = std::int16_t;
-    using int32_t  = std::int32_t;
-    using int64_t  = std::int64_t;
-    using int128_t = __int128_t;
+    using int8_t   = __INT8_TYPE__;
+    using int16_t  = __INT16_TYPE__;
+    using int32_t  = __INT32_TYPE__;
+    using int64_t  = __INT64_TYPE__;
+    using int128_t = __int128;
     using intmin_t = gold::int8_t;
     using intmax_t = gold::int128_t;
 
-    /// unsigned ints
+    //// unsigned ints
     using uint_t     = unsigned int;
     using ushort_t   = unsigned short;
-    using uint8_t    = std::uint8_t;
-    using uint16_t   = std::uint16_t;
-    using uint32_t   = std::uint32_t;
-    using uint64_t   = std::uint64_t;
-    using uint128_t  = __uint128_t;
+    using uint8_t    = __UINT8_TYPE__;
+    using uint16_t   = __UINT16_TYPE__;
+    using uint32_t   = __UINT32_TYPE__;
+    using uint64_t   = __UINT64_TYPE__;
+    using uint128_t  = unsigned __int128;
     using uintmin_t  = gold::uint8_t;
     using uintmax_t  = gold::uint128_t;
 
-    /// floating points [ binary-radix ]
-    using float16_t  = _Float16;
-    using float32_t  = float;
-    using float64_t  = double;
-    using float80_t  = long double;
-    using float128_t = __float128;
-    using floatmin_t = gold::float16_t;
-    using floatmax_t = gold::float128_t;
+    //// floating points [ radix-2 ]
+    using float16x_t  = decltype(0.0f16);
+    using bfloat16x_t = decltype(0.0bf16);
+    using float32_t   = float;
+    using float32x_t  = decltype(0.0f32);
+    using float64_t   = double;
+    using float64x_t  = decltype(0.0f64);
+    using float80_t   = long double;
+    using float128_t  = __float128;
+    using float128x_t = decltype(0.0f128);
+    using floatmin_t  = gold::float16x_t;
+    using bfloatmin_t = gold::bfloat16x_t;
+    using floatmax_t  = gold::float128x_t;
 
-    /// decimal floating points [ decimal-radix ]
+    //// decimal floating points [ radix-10 ]
     using decimal32_t  = decltype(__builtin_nand32(""));
     using decimal64_t  = decltype(__builtin_nand64(""));
     using decimal128_t = decltype(__builtin_nand128(""));
     using decimalmin_t = decimal32_t;
     using decimalmax_t = decimal128_t;
 
-    /// generalized floating point aliases
-    using bfloat16_t  = float16_t;
-    using bfloat32_t  = float32_t;
-    using dfloat32_t  = decimal32_t;
-    using bfloat64_t  = float64_t;
-    using dfloat64_t  = decimal64_t;
-    using bfloat80_t  = float80_t;
-    using bfloat128_t = float128_t;
-    using dfloat128_t = decimal128_t;
-    using bfloatmin_t = floatmin_t;
-    using bfloatmax_t = floatmax_t;
-    using dfloatmin_t = decimalmin_t;
-    using dfloatmax_t = decimalmax_t;
-
-    /// word-term types
+    //// word-term types
     using word_t  = unsigned short;
     using dword_t = unsigned long;
     using qword_t = unsigned long long;
 
-    /// characters and strings
+    //// characters and strings
     #if defined(UNICODE) || defined(_UNICODE)
     using tchar_t = wchar_t;
     #else
@@ -83,6 +73,14 @@ namespace gold {
     #else
     using tcstring_t = cstring_t;
     #endif // defined(UNICODE) || defined(_UNICODE)
+
+    //// restricted references and pointers
+    template <typename T>
+    using restricted = T __restrict__;
+
+    //// built-in vector type
+    template <typename T, std::size_t N>
+    using vectorized [[gnu::vector_size(sizeof(T) * N)]] = T;
 
 } // namespace gold
 #pragma GCC diagnostic pop

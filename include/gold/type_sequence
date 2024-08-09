@@ -1,0 +1,23 @@
+// <gold/type_sequence> - gold++ library
+
+// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_TYPE_SEQUENCE
+#define __GOLD_TYPE_SEQUENCE
+
+#include <gold/bits/sequence/type_fwd.hpp>
+#include <gold/bits/sequence/type_tokens.hpp>
+#include <gold/bits/sequence/type_seq.hpp>
+
+namespace gold {
+
+    //// Type Sequences
+    /// type_seq[_t]
+    /// empty_type_seq[_t]
+    /// concat_type_seq[_t]
+    /// zip_type_seq[_t]
+
+} // namespace gold
+
+#endif // __GOLD_TYPE_SEQUENCE

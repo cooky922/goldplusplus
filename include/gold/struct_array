@@ -1,21 +1,261 @@
 // <gold/struct_array> - gold++ library
 
-// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+// Copyright (C) [ 2021 - 2023 ] - present Desmond Gold
 
 #pragma once
 #ifndef __GOLD_STRUCT_ARRAY
 #define __GOLD_STRUCT_ARRAY
 
-#include <gold/bits/struct_array.hpp>
+#include <compare>
+#include <type_traits>
+#include <bits/stl_iterator.h>
+#include <gold/bits/__util/empty_t.hpp>
+#include <gold/bits/concepts/types.hpp>
+#include <gold/bits/sequence/make_integer_seq.hpp>
+#include <gold/bits/tuples/fwd.hpp>
 
-namespace gold::inline literals::inline struct_literals {
+namespace gold {
 
-    /// string literal operator template - for string into 'struct_array'
-    template <struct_array A>
-    consteval auto operator""_fs() {
-        return struct_array { A };
-    }
+    /// struct_array
+    template <gold::structural_type T, std::size_t N>
+    struct struct_array {
+        using element_type           = T;
+        using value_type             = std::remove_cv_t<T>;
+        using size_type              = std::size_t;
+        using difference_type        = std::ptrdiff_t;
+        using pointer                = value_type*;
+        using const_pointer          = const value_type*;
+        using reference              = value_type&;
+        using const_reference        = const value_type&;
+        using iterator               = value_type*;
+        using const_iterator         = const value_type*;
+        using reverse_iterator       = std::reverse_iterator<iterator>;
+        using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+        inline static constexpr std::size_t extent = N;
 
-} // namespace gold::inline literals::inline struct_literals
+        /// underlying data
+        T elements[N] = {};
+
+        /// note: No explicit construct/copy/destroy for aggregate type.
+
+        /// ctor
+        // note: constructors are implicitly defined
+
+        /// dtor
+        // note: destructor is implicitly defined
+
+        /// assignments
+        // note: assignments are implicitly defined
+
+        /// swap
+        constexpr void swap(struct_array& other) noexcept {
+            std::ranges::swap(elements, other.elements);
+        }
+
+        friend constexpr void swap(struct_array& lhs, struct_array& rhs) noexcept {
+            lhs.swap(rhs);
+        }
+
+        //// Iterator Access
+        constexpr auto begin() noexcept { return iterator{elements}; }
+        constexpr auto begin() const noexcept { return cbegin(); }
+        constexpr auto cbegin() const noexcept { return const_iterator{elements}; }
+        constexpr auto end() noexcept { return iterator{elements + N}; }
+        constexpr auto end() const noexcept { return cend(); }
+        constexpr auto cend() const noexcept { return const_iterator{elements + N}; }
+        constexpr auto rbegin() noexcept { return reverse_iterator{elements + N}; }
+        constexpr auto rbegin() const noexcept { return crbegin(); }
+        constexpr auto crbegin() const noexcept { return const_reverse_iterator{elements + N}; }
+        constexpr auto rend() noexcept { return reverse_iterator{elements}; }
+        constexpr auto rend() const noexcept { return crend(); }
+        constexpr auto crend() const noexcept { return const_reverse_iterator{elements}; }
+
+        /// data
+        [[nodiscard]] constexpr pointer data() noexcept { return elements; }
+        [[nodiscard]] constexpr const_pointer data() const noexcept { return elements; }
+
+        /// size
+        [[nodiscard]] static constexpr size_type size() noexcept { return N; }
+
+        /// size_bytes
+        [[nodiscard]] static constexpr size_type size_bytes() noexcept { return N * sizeof(T); }
+
+        /// empty
+        [[nodiscard]] static constexpr bool empty() noexcept { return false; }
+
+        /// operator[]
+        constexpr reference operator[](size_type pos) noexcept { return elements[pos]; }
+        constexpr const_reference operator[](size_type pos) const noexcept { return elements[pos]; }
+
+        /// front
+        constexpr reference front() noexcept { return elements[0]; }
+        constexpr const_reference front() const noexcept { return elements[0]; }
+
+        /// back
+        constexpr reference back() noexcept { return elements[N - 1]; }
+        constexpr const_reference back() const noexcept { return elements[N - 1]; }
+
+        /// first
+        template <std::size_t I>
+            requires (I <= N)
+        constexpr auto first() const {
+            if constexpr (I == 0)
+                return struct_array<T, 0>{};
+            else
+                return [&]<std::size_t... Is>(gold::index_seq_t<Is...>) {
+                    return struct_array<T, I> { elements[Is] ... };
+                }(gold::make_consecutive_index_seq<0, I>);
+        }
+
+        /// last
+        template <std::size_t I>
+            requires (I <= N)
+        constexpr auto last() const {
+            if constexpr (I == 0)
+                return struct_array<T, 0>{};
+            else
+                return [&]<std::size_t... Is>(gold::index_seq_t<Is...>) {
+                    return struct_array<T, I> { elements[Is] ... };
+                }(gold::make_consecutive_index_seq<N - I, I>);
+        }
+
+        /// subarray
+        template <std::size_t I, std::size_t J>
+            requires (I < N && J <= N && I <= J)
+        constexpr auto subarray() const {
+            if constexpr (I == J)
+                return struct_array<T, 0>{};
+            else
+                return [&]<std::size_t... Is>(gold::index_seq_t<Is...>) {
+                    return struct_array<T, J - I> { elements[Is]... };
+                }(gold::make_consecutive_index_seq<I, J - I>);
+        }
+
+        /// fill
+        constexpr void fill(const T& item) {
+            for (std::size_t i = 0; i < N; ++i)
+                elements[i] = item;
+        }
+
+        /// comparisons
+        constexpr bool operator==(const struct_array&) const noexcept requires std::equality_comparable<T>
+            = default;
+        constexpr auto operator<=>(const struct_array&) const noexcept requires std::three_way_comparable<T>
+            = default;
+        constexpr std::partial_ordering operator<=>(const struct_array&) const noexcept
+            = default;
+    };
+
+    template <gold::structural_type T>
+    struct struct_array<T, 0> {
+        using element_type           = T;
+        using value_type             = std::remove_cv_t<T>;
+        using size_type              = std::size_t;
+        using difference_type        = std::ptrdiff_t;
+        using pointer                = value_type*;
+        using const_pointer          = const value_type*;
+        using reference              = value_type&;
+        using const_reference        = const value_type&;
+        using iterator               = value_type*;
+        using const_iterator         = const value_type*;
+        using reverse_iterator       = std::reverse_iterator<iterator>;
+        using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+        inline static constexpr std::size_t extent = 0;
+
+        __util::empty_t elements;
+
+        /// note: No explicit construct/copy/destroy for aggregate type.
+
+        /// ctor
+        // note: constructors are implicitly defined
+
+        /// dtor
+        // note: destructor is implicitly defined
+
+        /// assignments
+        // note: assignments are implicitly defined
+
+        /// swap
+        constexpr void swap(struct_array&) noexcept {}
+
+        friend constexpr void swap(struct_array&, struct_array&) noexcept {}
+
+        //// Iterator Access
+        static constexpr iterator begin() noexcept { return nullptr; }
+        static constexpr const_iterator cbegin() noexcept { return nullptr; }
+        static constexpr iterator end() noexcept { return nullptr; }
+        static constexpr const_iterator cend() noexcept { return nullptr; }
+        static constexpr auto rbegin() noexcept { return reverse_iterator{nullptr}; }
+        static constexpr auto crbegin() noexcept { return const_reverse_iterator{nullptr}; }
+        static constexpr auto rend() noexcept { return reverse_iterator{nullptr}; }
+        static constexpr auto crend() noexcept { return const_reverse_iterator{nullptr}; }
+
+        /// data
+        [[nodiscard]] static constexpr pointer data() noexcept { return nullptr; }
+
+        /// size
+        [[nodiscard]] static constexpr size_type size() noexcept { return 0; }
+
+        /// size_bytes
+        [[nodiscard]] static constexpr size_type size_bytes() noexcept { return 0; }
+
+        /// empty
+        [[nodiscard]] static constexpr bool empty() noexcept { return true; }
+
+        /// operator[] = delete
+        constexpr reference operator[](size_type) noexcept = delete;
+        constexpr const_reference operator[](size_type) const noexcept = delete;
+
+        /// front
+        constexpr reference front() noexcept = delete;
+        constexpr const_reference front() const noexcept = delete;
+
+        /// back
+        constexpr reference back() noexcept = delete;
+        constexpr const_reference back() const noexcept = delete;
+
+        /// first
+        template <std::size_t I>
+            requires (I == 0)
+        constexpr auto first() const { return struct_array<T, 0>{}; }
+
+        /// last
+        template <std::size_t I>
+            requires (I == 0)
+        constexpr auto last() const { return struct_array<T, 0>{}; }
+
+        /// subarray
+        template <std::size_t, std::size_t>
+        constexpr auto subarray() const = delete;
+
+        /// fill
+        constexpr void fill(const T&) {}
+
+        /// comparisons
+        constexpr bool operator==(const struct_array&) const noexcept { return true; }
+        constexpr std::strong_ordering operator<=>(const struct_array&) const noexcept {
+            return std::strong_ordering::equal;
+        }
+    };
+
+    /// deduction guides for struct_array
+    template <typename T, std::same_as<T>... Ts>
+    struct_array(T, Ts...) -> struct_array<T, sizeof...(Ts) + 1>;
+
+    template <typename T, std::size_t N>
+    struct_array(T (&)[N]) -> struct_array<T, N>;
+
+    template <typename T, std::size_t N>
+    struct_array(T (&&)[N]) -> struct_array<T, N>;
+
+    namespace tuples {
+
+        /// tuples::enable_array_like<struct_array>
+        template <typename T, std::size_t N>
+        inline constexpr bool enable_array_like<struct_array<T, N>> = true;
+
+    } // namespace tuples
+
+} // namespace gold
 
 #endif // __GOLD_STRUCT_ARRAY

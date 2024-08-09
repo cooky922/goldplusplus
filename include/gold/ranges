@@ -1,0 +1,24 @@
+// <gold/ranges> - gold++ library
+
+// Copyright (C) [ 2021 - 2023 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_RANGES
+#define __GOLD_RANGES
+
+#include <ranges>
+#include <gold/bits/ranges/range_primitives.hpp>
+#include <gold/bits/ranges/range_adaptor.hpp>
+#include <gold/bits/ranges/view_util.hpp>
+#include <gold/bits/ranges/generate_view.hpp>
+#include <gold/bits/ranges/maybe_view.hpp>
+#include <gold/bits/ranges/move_each_view.hpp>
+#include <gold/bits/ranges/const_each_view.hpp>
+#include <gold/bits/ranges/concat_view.hpp>
+#include <gold/bits/ranges/cycle_view.hpp>
+#include <gold/bits/ranges/delimit_view.hpp>
+#include <gold/bits/ranges/cache_last_view.hpp>
+#include <gold/bits/ranges/from_range.hpp>
+#include <gold/bits/ranges/to.hpp>
+
+#endif // __GOLD_RANGES

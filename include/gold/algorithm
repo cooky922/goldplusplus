@@ -1,0 +1,19 @@
+// <gold/algorithm> - gold++ library
+
+// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_ALGORITHM
+#define __GOLD_ALGORITHM
+
+#include <algorithm>
+#include <gold/bits/algo/range_contains.hpp>
+#include <gold/bits/algo/range_starts_with.hpp>
+#include <gold/bits/algo/range_ends_with.hpp>
+#include <gold/bits/algo/range_find_last.hpp>
+#include <gold/bits/algo/range_iota.hpp>
+#include <gold/bits/algo/range_lex_compare.hpp>
+#include <gold/bits/algo/range_fold.hpp>
+#include <gold/bits/algo/range_is_uniqued.hpp>
+
+#endif // __GOLD_ALGORITHM

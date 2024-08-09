@@ -1,26 +1,11 @@
 // <gold/generator> - gold++ library
 
-// Copyright (C) 2021 - present Desmond Gold
+// Copyright (C) [ 2021 - 2024 ] - present Desmond Gold
 
 #pragma once
 #ifndef __GOLD_GENERATOR
 #define __GOLD_GENERATOR
 
-#include <gold/bits/coroutine/coro_generator.hpp>
-
-/// current principles to avoid any unhandled exceptions
-
-/// if temporary: use a copy for argument
-/// if l-value:   use an l-value for argument
-/// if l-value:   otherwise, use a copy for argument if moving
-/// const-generator objects are probihited!
-
-/// const generator& -> not allowed (since they are temporaries)
-/// any temporary -> generator&& -> not allowed
-/// moving an existing object -> generator&& -> allowed
-/// existing object -> generator -> not allowed (since copying is deleted)
-/// moving an existing object -> generator -> allowed (since moving is allowed)
-/// taking a non-const l-value reference -> allowed
-/// any generator with const -> not allowed
+#include <gold/bits/coroutine/generator.hpp>
 
 #endif // __GOLD_GENERATOR

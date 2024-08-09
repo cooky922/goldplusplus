@@ -1,72 +1,60 @@
 // <gold/format> - gold++ library
 
-// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+// Copyright (C) [ 2021 - 2024 ] - present Desmond Gold
 
 #pragma once
 #ifndef __GOLD_FORMAT
 #define __GOLD_FORMAT
 
-//// example:
-/// gold::format("${}", 1234) == "1234"
-/// gold::format("${0}, ${1}!", "Hello", "world") == "Hello, world!"
-/// gold::format("${0}${1}${0}", "abra", "cad") == "abracadabra"
-/// gold::format("$$$$${:s}$$$$", "Dollar") == "$$Dollar$$"
-/// gold::format("${:#x}", 0xdeadbeef) == "0xdeadbeef"
-/// gold::format("${:.2f}", 3.14f) == "3.14"
-/// gold::format("Wh${}? ${} this madness?", 'y', "Is") == "Why? Is this madness?"
-/// gold::format("${::^5}", 'A') == "::A::"
-/// gold::format("${0:.${1}f}", 3.1415926535, 2) == "3.14"
-/// gold::format("${:|^#${1}x}", 0xdeadbeef, 30) == "||||||||||0xdeadbeef||||||||||"
+#ifdef __GOLDM_FMT_TRY
+# undef __GOLDM_FMT_TRY
+#endif
 
-//// missing and caveats:
-/// - no sign specs for floating points
-/// - no 'zero' padding specs
-/// - formatter class replacement
-/// - revamp 'format_specs'
-/// - nonvigilant error reporting
-/// - unstable argument format indexing
+#ifdef __GOLDM_FMT_TRYV
+# undef __GOLDM_FMT_TRYV
+#endif
 
-//// fixed and implemented:
-/// - no width and alignment specs, now implemented
-/// - unstable 'formatted_size', now stable
-/// - no dynamic arg-id for precision and width, now implemented
-/// - no custom specs, now available
-/// - unstable floating point conversion to string, now partially implemented
+#define __GOLDM_FMT_TRY(fmt_expr, block) \
+    if (auto fmt_expr_result = fmt_expr; !fmt_expr_result) \
+        return __format::error_t(fmt_expr_result.error()); \
+    else { \
+        decltype(auto) try_result = *fmt_expr_result; \
+        block \
+    }
 
-//// future developments:
-/// - 'format_parse_context'
-/// - 'format_context'
-/// - precise argument indexing
-/// - better error reporting (both compile and run-time)
+#define __GOLDM_FMT_TRYV(fmt_expr, block) \
+    if (auto fmt_expr_result = fmt_expr; !fmt_expr_result) \
+        return __format::error_t(fmt_expr_result.error()); \
+    else { \
+        block \
+    }
 
-//// intend to not be added:
-/// - encoding
-/// - other character type (ex. wide character)
-/// - locale specific
-
-//// available entities:
-/// format_specs
-/// format_error
-/// format_args
-/// formatter
-/// formattable
-/// formattable_to
-/// custom_formattable
-/// custom_formattable_to
-/// vformat_to
-/// format_to
-/// vformat
-/// format
-/// formatted_size
-/// format_to_c
-/// format_to_n_result
-/// format_to_n
-
-#include <gold/bits/format/fmt_error.hpp>
-#include <gold/bits/format/fmt_specs.hpp>
-#include <gold/bits/format/fmt_parse.hpp>
+#include <gold/bits/format/fwd.hpp>
+#include <gold/bits/format/error.hpp>
+#include <gold/bits/format/format_parse_context.hpp>
+#include <gold/bits/format/format_to_n_result.hpp>
+#include <gold/bits/format/sink.hpp>
+#include <gold/bits/format/format_arg_kind.hpp>
+#include <gold/bits/format/format_args.hpp>
+#include <gold/bits/format/format_context.hpp>
+#include <gold/bits/format/format_arg_handle.hpp>
+#include <gold/bits/format/concepts.hpp>
+#include <gold/bits/format/parser.hpp>
 #include <gold/bits/format/formatter.hpp>
-#include <gold/bits/format/fmt_args.hpp>
-#include <gold/bits/format/fmt_functions.hpp>
+#include <gold/bits/format/std_formatter.hpp>
+#include <gold/bits/format/tuple_formatter.hpp>
+#include <gold/bits/format/range_formatter.hpp>
+#include <gold/bits/format/range_default_formatter.hpp>
+#include <gold/bits/format/scanner.hpp>
+#include <gold/bits/format/format_string.hpp>
+#include <gold/bits/format/format_functions.hpp>
+
+#ifdef __GOLDM_FMT_TRY
+# undef __GOLDM_FMT_TRY
+#endif // __GOLDM_FMT_TRY
+
+#ifdef __GOLDM_FMT_TRYV
+# undef __GOLDM_FMT_TRYV
+#endif // __GOLDM_FMT_TRYV
 
 #endif // __GOLD_FORMAT

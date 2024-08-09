@@ -1,6 +1,6 @@
 // <gold/concepts> - gold++ library
 
-// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+// Copyright (C) [ 2021 - 2023 ] - present Desmond Gold
 
 #pragma once
 #ifndef __GOLD_CONCEPTS
@@ -15,9 +15,9 @@
 namespace gold {
 
     //// Types
-    /// lambda		             [ defined in <gold/bits/concepts/lambda.hpp> ]
-    /// generic_lambda           [ defined in <gold/bits/concepts/lambda.hpp> ]
-    /// stateless_lambda         [ defined in <gold/bits/concepts/lambda.hpp> ]
+    /// closure_type		     [ defined in <gold/bits/concepts/lambda.hpp> ]
+    /// generic_closure_type     [ defined in <gold/bits/concepts/lambda.hpp> ]
+    /// stateless_closure_type   [ defined in <gold/bits/concepts/lambda.hpp> ]
     /// char_type	             [ defined in <gold/bits/concepts/types.hpp>  ]
     /// ordering_type            [ defined in <gold/bits/concepts/types.hpp>  ]
     /// qualified_numeric        [ defined in <gold/bits/concepts/types.hpp>  ]
@@ -33,10 +33,9 @@ namespace gold {
     /// allocator_of             [ defined in <gold/bits/concepts/allocator.hpp> ]
 
     //// Strings
-    /// enable_qualified_string  [ defined in <gold/bits/concepts/string.hpp> ]
-    /// qualified_basic_string   [ defined in <gold/bits/concepts/string.hpp> ]
-    /// qualified_string         [ defined in <gold/bits/concepts/string.hpp> ]
-    /// qualified_wstring        [ defined in <gold/bits/concepts/string.hpp> ]
+    /// basic_string_like        [ defined in <gold/bits/concepts/string.hpp> ]
+    /// string_like              [ defined in <gold/bits/concepts/string.hpp> ]
+    /// wstring_like             [ defined in <gold/bits/concepts/string.hpp> ]
 
     //// Streams
     /// basic_stream_insertable       [ defined in <gold/bits/concepts/stream.hpp> ]
@@ -48,7 +47,6 @@ namespace gold {
     /// range_basic_stream_insertable [ defined in <gold/bits/concepts/stream.hpp> ]
     /// range_stream_insertable       [ defined in <gold/bits/concepts/stream.hpp> ]
     /// range_wstream_insertable      [ defined in <gold/bits/concepts/stream.hpp> ]
-
 
 } // namespace gold
 

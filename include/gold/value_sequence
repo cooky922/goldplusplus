@@ -1,55 +1,40 @@
 // <gold/value_sequence> - gold++ library
 
-// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+// Copyright (C) [ 2021 - 2023 ] - present Desmond Gold
 
 #pragma once
 #ifndef __GOLD_VALUE_SEQUENCE
 #define __GOLD_VALUE_SEQUENCE
 
-#include <gold/bits/value_sequence/primitives.hpp>
-#include <gold/bits/value_sequence/factory.hpp>
-#include <gold/bits/value_sequence/algorithm.hpp>
+#include <gold/bits/sequence/value_fwd.hpp>
+#include <gold/bits/sequence/value_seq.hpp>
+#include <gold/bits/sequence/make_integer_seq.hpp>
+#include <gold/bits/sequence/make_value_seq_from.hpp>
 
 namespace gold {
 
-    ///// Homogeneous Data Sequence
-    /// homo_value_sequence [general version]
-    /// bool_sequence
-    /// char_sequence
-    /// int_sequence
-    /// floating_point_sequence
-    /// float_sequence
-    /// double_sequence
-    /// long_double_sequence
+    //// Value Sequences
+    /// value_seq[_t]
+    /// integer_seq[_t]
+    /// index_seq[_t]
+    /// int_seq[_t]
+    /// char_seq[_t]
+    /// bool_seq[_t]
+    /// floating_point_seq[_t]
+    /// float_seq[_t]
+    // note: some handy algorithms are defined as nested
 
-    ///// Heterogeneous Data Sequence
-    /// hetero_value_sequence
+    //// Integer Sequence Factor
+    /// make_[integer|index]_seq[_t]
+    /// index_sequence_for[_t]
+    /// make_consecutive_[integer|index]_seq[_t]
+    /// make_reverse_[integer|index]_seq[_t]
+    /// make_interval_[integer|index]_seq[_t]
+    /// make_repeat_[integer|index]_seq[_t]
 
-    ///// Integer Sequence Factory
-    /// make_consecutive_integer_sequence
-    /// make_consecutive_index_sequence
-    /// make_consecutive_int_sequence
-    /// make_reverse_integer_sequence
-    /// make_reverse_index_sequence
-    /// make_reverse_int_sequence
-    /// make_interval_integer_sequence
-    /// make_interval_index_sequence
-    /// make_interval_int_sequence
-
-    //// Value Sequence Algorithm [[ in namespace gold::value_sequence ]]
-    /// at
-    /// front
-    /// back
-    /// offset
-    /// concat
-    /// sum
-    /// product
-    /// partial_sum
-    /// partial_product
-    /// min
-    /// max
-    /// reverse
-    /// sort
+    //// Value Sequence and Array Conversions
+    /// make_array_from_sequence
+    /// make_sequence_from_array
 
 } // namespace gold
 

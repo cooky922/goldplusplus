@@ -1,0 +1,13 @@
+// <gold/math> - gold++ library
+
+// Copyright (C) [ 2024 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_MATH
+#define __GOLD_MATH
+
+#include <gold/bits/numeric/interval.hpp>
+#include <gold/bits/numeric/math_int.hpp>
+#include <gold/bits/numeric/numbers.hpp>
+
+#endif // __GOLD_MATH

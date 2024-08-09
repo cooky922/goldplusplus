@@ -1,12 +1,12 @@
 // <gold/char_class> - gold++ library
 
-// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+// Copyright (C) [ 2021 - 2024 ] - present Desmond Gold
 
 #pragma once
 #ifndef __GOLD_CHAR_CLASS
 #define __GOLD_CHAR_CLASS
 
-#include <initializer_list>
+#include <gold/bits/algo/contains.hpp>
 #include <bits/char_traits.h>
 
 namespace gold {
@@ -71,7 +71,7 @@ namespace gold {
         }
         /// ::is_punct
         static constexpr bool is_punct(CharT c) noexcept {
-            return __char_class::is_one_of(c, {
+            return __algo::contains({
                 CharT('!'), CharT('"'), CharT('#'), CharT('$'),
                 CharT('%'), CharT('&'), CharT('\''), CharT('('),
                 CharT(')'), CharT('*'), CharT('+'), CharT(','),
@@ -80,12 +80,13 @@ namespace gold {
                 CharT('?'), CharT('@'), CharT('['), CharT('\\'),
                 CharT(']'), CharT('^'), CharT('_'), CharT('`'),
                 CharT('{'), CharT('|'), CharT('}'), CharT('~')
-            });
+            }, c);
         }
         /// ::is_graph
         static constexpr bool is_graph(CharT c) noexcept {
             return is_alnum(c) || is_punct(c);
         }
+
         /// ::is_printable
         static constexpr bool is_printable(CharT c) noexcept {
             return is_graph(c) || c == CharT(' ');

@@ -1,0 +1,101 @@
+// <gold/sync_value> - gold++ library
+
+// Copyright (C) [ 2021 - 2023 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_SYNC_VALUE
+#define __GOLD_SYNC_VALUE
+
+#include <mutex>
+#include <concepts>
+#include <gold/bits/functional/invoke.hpp>
+
+namespace gold {
+
+    /// sync_value
+    template <typename T>
+    class sync_value {
+      private:
+        std::mutex m_mtx_;
+        T m_val_;
+
+        [[gnu::always_inline]] inline T& mf_value_() & {
+            return m_val_;
+        }
+
+      public:
+        sync_value(const T& val)
+        : m_val_(val) {}
+
+        sync_value(T&& val)
+        : m_val_(std::move(val)) {}
+
+        template <typename U>
+            requires std::constructible_from<T, U&&>
+        sync_value(U&& arg)
+        : m_val_(std::forward<U>(arg)) {}
+
+        sync_value(const sync_value&) = delete;
+        sync_value& operator=(const sync_value&) = delete;
+
+        template <typename F>
+            requires std::invocable<F, T&>
+        std::invoke_result_t<F, T&> apply_sync(F&& f) & {
+            [[maybe_unused]] std::lock_guard guard (m_mtx_);
+            return gold::invoke(std::forward<F>(f), m_val_);
+        }
+
+        template <typename F, typename U, typename... Us>
+            requires std::invocable<F, U&, Us&...>
+        friend std::invoke_result_t<F, U&, Us&...> apply_sync(F&&, sync_value<U>&, sync_value<Us>&...);
+    };
+
+    template <typename T>
+    class sync_value<T&> {
+      private:
+        std::mutex m_mtx_;
+        T* m_ptr_;
+
+        [[gnu::always_inline]] inline T& mf_value_() & {
+            return *m_ptr_;
+        }
+
+      public:
+        sync_value(T& val) noexcept
+        : m_ptr_(__builtin_addressof(val)) {}
+
+        sync_value(std::reference_wrapper<T> val) noexcept
+        : m_ptr_(__builtin_addressof(val.get())) {}
+
+        sync_value(const sync_value&) = delete;
+        sync_value& operator=(const sync_value&) = delete;
+
+        template <typename F>
+            requires std::invocable<F, T&>
+        std::invoke_result_t<F, T&> apply_sync(F&& f) & {
+            [[maybe_unused]] std::lock_guard guard (m_mtx_);
+            return gold::invoke(std::forward<F>(f), *m_ptr_);
+        }
+
+        template <typename F, typename U, typename... Us>
+            requires std::invocable<F, U&, Us&...>
+        friend std::invoke_result_t<F, U&, Us&...> apply_sync(F&&, sync_value<U>&, sync_value<Us>&...);
+    };
+
+    template <typename T>
+    sync_value(T) -> sync_value<T>;
+
+    template <typename T>
+    sync_value(std::reference_wrapper<T>) -> sync_value<T&>;
+
+    /// apply_sync
+    template <typename F, typename T, typename... Ts>
+        requires std::invocable<F, T&, Ts&...>
+    std::invoke_result_t<F, T&, Ts&...> apply_sync(F&& f, sync_value<T>& sync, sync_value<Ts>&... other_syncs) {
+        std::scoped_lock guard (sync.m_mtx_, other_syncs.m_mtx_...);
+        return gold::invoke(std::forward<F>(f), sync.mf_value_(), other_syncs.mf_value_()...);
+    }
+
+} // namespace gold
+
+#endif // __GOLD_SYNC_VALUE

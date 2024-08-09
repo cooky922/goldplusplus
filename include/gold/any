@@ -1,6 +1,6 @@
 // <gold/any> - gold++ library
 
-// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+// Copyright (C) [ 2021 - 2024 ] - present Desmond Gold
 
 #pragma once
 #ifndef __GOLD_ANY
@@ -18,6 +18,7 @@
 namespace gold {
 
     /// bad_any_access
+    /// in_place_viewable[_t]
     /// view_any
     /// any
     /// make_any

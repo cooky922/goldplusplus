@@ -1,0 +1,19 @@
+// <gold/mdspan> - gold++ library
+
+// Copyright (C) [ 2021 - 2024 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_MDSPAN
+#define __GOLD_MDSPAN
+
+#include <gold/bits/mdspan/fwd.hpp>
+#include <gold/bits/mdspan/extents.hpp>
+#include <gold/bits/mdspan/layout_left.hpp>
+#include <gold/bits/mdspan/layout_right.hpp>
+#include <gold/bits/mdspan/layout_stride.hpp>
+#include <gold/bits/mdspan/default_accessor.hpp>
+#include <gold/bits/mdspan/mdspan.hpp>
+#include <gold/bits/mdspan/equal_mdspan.hpp>
+#include <gold/bits/mdspan/submdspan.hpp>
+
+#endif // __GOLD_MDSPAN

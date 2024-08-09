@@ -1,16 +1,22 @@
 // <gold/pack> - gold++ library
 
-// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+// Copyright (C) [ 2021 - 2024 ] - present Desmond Gold
 
 #pragma once
 #ifndef __GOLD_PACK
 #define __GOLD_PACK
 
-#include <gold/bits/pack_getter.hpp>
+#include <cstddef>
+#include <gold/bits/void_like.hpp>
+#include <gold/bits/functional/invoke.hpp>
 
-/// pack utilities for template type parameter
+/// pack utilities for template type parameter and others
 
 namespace gold {
+
+    /// value_seq_t [fwd decl]
+    template <auto...>
+    struct value_seq_t;
 
     /// pack_size
     template <typename... Ts>
@@ -19,22 +25,32 @@ namespace gold {
     /// pack_element_at
     template <std::size_t I, typename... Ts>
         requires (I < sizeof...(Ts))
-    using pack_element_at = typename decltype(
-        __pack::select_arg<I>(__pack::indexer<std::index_sequence_for<Ts...>, Ts...>{})
-    )::type;
+#ifdef __cpp_pack_indexing
+    using pack_element_at = Ts ... [I];
+#else
+    using pack_element_at = __type_pack_element<I, Ts...>;
+#endif
 
     /// pack_at_front
     template <typename... Ts>
-    using pack_at_front = pack_element_at<0, Ts...>;
+#ifdef __cpp_pack_indexing
+    using pack_at_front = Ts ... [0];
+#else
+    using pack_at_front = __type_pack_element<0, Ts...>;
+#endif
 
     /// pack_at_back
     template <typename... Ts>
-    using pack_at_back = typename __pack::at_back_impl<Ts...>::type;
+#ifdef __cpp_pack_indexing
+    using pack_at_back = Ts ... [sizeof...(Ts) - 1];
+#else
+    using pack_at_back = __type_pack_element<sizeof...(Ts) - 1, Ts...>;
+#endif
 
     //// Template Utilities
     /// pack_for_each
     template <typename... Ts, typename F>
-    constexpr void pack_for_each(F&& f) noexcept {
+    [[gnu::always_inline]] inline constexpr void pack_for_each(F&& f) noexcept {
         // requirement:
         // the return type must be discardable
         // should only be lambda or function object (templated)
@@ -43,18 +59,108 @@ namespace gold {
 
     /// pack_for_each
     template <auto... Ns, typename F>
-    constexpr void pack_for_each(F&& f) noexcept {
+    [[gnu::always_inline]] inline constexpr void pack_for_each(F&& f) noexcept {
         // same to pack_for_each type overload
         (f.template operator()<Ns>(), ...);
     }
 
-    /// pack_get
-    template <std::size_t I, typename... Args>
-    constexpr decltype(auto) pack_get(Args&&... args) noexcept {
-        return __pack::get_at_impl<std::make_index_sequence<I>>::at(std::forward<Args>(args)...);
+    /// pack_for_each_index
+    template <std::size_t N, typename F>
+    [[gnu::always_inline]] inline constexpr void pack_for_each_index(F&& f) noexcept {
+        [&]<auto... Is>(value_seq_t<Is...>*) {
+            (f.template operator()<std::size_t(Is)>(), ...);
+        }(static_cast<value_seq_t<__integer_pack(N)...>*>(nullptr));
     }
 
-    /// sequence_for_each [TBA...]
+    /// pack_apply_index
+    template <std::size_t N, typename F>
+    [[gnu::always_inline]] inline constexpr decltype(auto) pack_apply_index(F&& f) noexcept {
+        return [&]<auto... Is>(value_seq_t<Is...>*) -> decltype(auto) {
+            return f.template operator()<std::size_t(Is)...>();
+        }(static_cast<value_seq_t<__integer_pack(N)...>*>(nullptr));
+    }
+
+    namespace __pack {
+
+        /// __pack::get_leaf
+        template <typename T, auto I>
+        struct get_leaf {
+            T value;
+        };
+
+    } // namespace __pack
+
+    /// pack_get
+    template <std::size_t I, typename... Args>
+        requires (I < sizeof...(Args))
+    [[gnu::always_inline]] inline constexpr decltype(auto) pack_get(Args&&... args) noexcept {
+#ifdef __cpp_pack_indexing
+        return static_cast<Args...[I]&&>(args...[I]);
+#else
+        using Op = __type_pack_element<I, Args&&...>;
+        using Array = __remove_reference(Op)*[sizeof...(Args)];
+        if constexpr (requires { Array{const_cast<__remove_reference(Op)*>(__builtin_addressof(args))...}; }) {
+            return static_cast<Op>(*Array{const_cast<__remove_reference(Op)*>(__builtin_addressof(args))...}[I]);
+        } else {
+            using Seq = value_seq_t<__integer_pack(sizeof...(Args))...>;
+            return [&]<auto... Is> [[gnu::always_inline]] (value_seq_t<Is...>*) -> Op {
+                struct : __pack::get_leaf<Args&, Is> ... {} packed { args ... };
+                return static_cast<Op>(
+                    static_cast<__type_pack_element<I, __pack::get_leaf<Args&, Is>...>*>(&packed)->value
+                );
+//                return [] [[gnu::always_inline]] (decltype((Is, gold::void_like_v)) ..., Op& op, ...) static -> Op {
+//                    return static_cast<Op>(op);
+//                }(args...);
+            }(static_cast<Seq*>(nullptr));
+        }
+#endif
+    }
+
+    namespace __pack {
+
+        /// __pack::foldable_wrapper
+        template <typename F, typename T>
+        struct foldable_wrapper {
+            F&  fun;
+            T   op;
+
+            using InvocableType = F;
+            using OperandType   = T;
+
+            template <typename U>
+                requires std::is_invocable_v<F&, T, U>
+            [[gnu::always_inline]] constexpr auto operator&&(foldable_wrapper<F, U>&& other) && noexcept(std::is_nothrow_invocable_v<F&, T, U>) {
+                using ResultOperandType = std::invoke_result_t<F&, T, U>;
+                using FoldableType      = foldable_wrapper<F, ResultOperandType>;
+                return FoldableType {
+                    fun, gold::invoke(fun, static_cast<T>(op), static_cast<U>(other.op))
+                };
+            }
+
+            // helps to have a nicer error message
+            template <typename U>
+            void operator&&(foldable_wrapper<F, U>&&) && = delete;
+        };
+
+    } // namespace __pack
+
+    /// pack_fold_left
+    template <typename F, typename... Args>
+        requires (sizeof...(Args) > 0)
+    [[gnu::always_inline]] inline constexpr decltype(auto) pack_fold_left(F&& f, Args&&... args) {
+        using FinalFoldable = decltype((... && __pack::foldable_wrapper<F, Args&&> { f, static_cast<Args&&>(args) }));
+        using Result        = FinalFoldable::OperandType;
+        return static_cast<Result>((... && __pack::foldable_wrapper<F, Args&&> { f, static_cast<Args&&>(args) }).op);
+    }
+
+    /// pack_fold_right
+    template <typename F, typename... Args>
+        requires (sizeof...(Args) > 0)
+    [[gnu::always_inline]] inline constexpr decltype(auto) pack_fold_right(F&& f, Args&&... args) {
+        using FinalFoldable = decltype((__pack::foldable_wrapper<F, Args&&> { f, static_cast<Args&&>(args) } && ...));
+        using Result        = FinalFoldable::OperandType;
+        return static_cast<Result>((__pack::foldable_wrapper<F, Args&&> { f, static_cast<Args&&>(args) } && ...).op);
+    }
 
 } // namespace gold
 

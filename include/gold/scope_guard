@@ -25,13 +25,13 @@ namespace gold {
 
       public:
         /// default ctor
-        scope_guard() = default;
+        constexpr scope_guard() = default;
 
         /// explicit deleted copy ctor
-        scope_guard(const scope_guard&) = delete;
+        constexpr scope_guard(const scope_guard&) = delete;
 
         /// move ctor
-        constexpr scope_guard(scoped_guard&& other) noexcept
+        constexpr scope_guard(scope_guard&& other) noexcept
         : m_func_(other.release()) {}
 
         /// one-arg ctor
@@ -69,9 +69,8 @@ namespace gold {
         /// swap
         constexpr void swap(scope_guard& other) noexcept
             requires std::swappable<invocable_type> {
-            using std::swap;
-            swap(m_func_, other.m_func_);
-            swap(m_engaged_, other.m_engaged_);
+            std::ranges::swap(m_func_, other.m_func_);
+            std::ranges::swap(m_engaged_, other.m_engaged_);
         }
 
         /// friend swap

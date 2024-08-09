@@ -1,0 +1,53 @@
+// <gold/tuples> - gold++ library
+
+// Copyright (C) [ 2021 - 2024 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_TUPLES
+#define __GOLD_TUPLES
+
+#include <gold/bits/tuples/fwd.hpp>
+#include <gold/bits/tuples/tuple_size.hpp>
+#include <gold/bits/tuples/tuple_element.hpp>
+#include <gold/bits/tuples/get.hpp>
+#include <gold/bits/tuples/size.hpp>
+#include <gold/bits/tuples/concepts.hpp>
+#include <gold/bits/tuples/apply.hpp>
+#include <gold/bits/tuples/apply_each.hpp>
+#include <gold/bits/tuples/to.hpp>
+#include <gold/bits/tuples/concat.hpp>
+#include <gold/bits/tuples/fold.hpp>
+#include <gold/bits/tuples/zip.hpp>
+#include <gold/bits/tuples/visit_at.hpp>
+
+namespace gold::tuples {
+
+    /// tuples::tuple_size[_v]        [ defined in <gold/bits/tuples/tuple_size.hpp> ]
+    /// tuples::tuple_element[_t]     [ defined in <gold/bits/tuples/tuple_element.hpp> ]
+    /// tuples::get                   [ defined in <gold/bits/tuples/get.hpp> ]
+    /// tuples::size                  [ defined in <gold/bits/tuples/size.hpp> ]
+    /// tuples::gettable_at           [ defined in <gold/bits/tuples/concepts.hpp> ]
+    /// tuples::gettable              [ defined in <gold/bits/tuples/concepts.hpp> ]
+    /// tuples::tuple_like            [ defined in <gold/bits/tuples/concepts.hpp> ]
+    /// tuples::tuple_like_for_size   [ defined in <gold/bits/tuples/concepts.hpp> ]
+    /// tuples::empty_like            [ defined in <gold/bits/tuples/concepts.hpp> ]
+    /// tuples::single_like           [ defined in <gold/bits/tuples/concepts.hpp> ]
+    /// tuples::pair_like             [ defined in <gold/bits/tuples/concepts.hpp> ]
+    /// tuples::applicable            [ defined in <gold/bits/tuples/apply.hpp> ]
+    /// tuples::apply_result[_t]      [ defined in <gold/bits/tuples/apply.hpp> ]
+    /// tuples::apply                 [ defined in <gold/bits/tuples/apply.hpp> ]
+    /// tuples::apply_each            [ defined in <gold/bits/tuples/apply_each.hpp> ]
+    /// tuples::apply_each_result[_t] [ defined in <gold/bits/tuples/apply_each.hpp> ]
+    /// tuples::to                    [ defined in <gold/bits/tuples/to.hpp> ]
+    /// tuples::concat                [ defined in <gold/bits/tuples/concat.hpp> ]
+    /// tuples::fold_left[_first]     [ defined in <gold/bits/tuples/fold.hpp> ]
+    /// tuples::fold_right[_last]     [ defined in <gold/bits/tuples/fold.hpp> ]
+    /// tuples::zip                   [ defined in <gold/bits/tuples/zip.hpp> ]
+    /// tuples::visit_at              [ defined in <gold/bits/tuples/visit_at.hpp> ]
+    /// tuples::visitable_with        [ defined in <gold/bits/tuples/visit_at.hpp> ]
+    /// tuples::visitor_for           [ defined in <gold/bits/tuples/visit_at.hpp> ]
+
+
+} // namespace gold::tuples
+
+#endif // __GOLD_TUPLES

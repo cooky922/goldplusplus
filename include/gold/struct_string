@@ -1,0 +1,141 @@
+// <gold/struct_string> - gold++ library
+
+// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_STRUCT_STRING
+#define __GOLD_STRUCT_STRING
+
+#include <compare>
+#include <string_view>
+#include <type_traits>
+#include <gold/bits/algo/min_max.hpp>
+#include <gold/bits/sequence/make_integer_seq.hpp>
+#include <gold/bits/tuples/fwd.hpp>
+
+namespace gold {
+
+    /// struct_string
+    template <std::size_t N>
+    struct struct_string {
+      public:
+        using value_type = char;
+        using size_type  = std::size_t;
+        using reference  = const char&;
+        using pointer    = const char*;
+        using iterator   = const value_type*;
+        using traits_type = std::char_traits<char>;
+
+        const char chars[N + 1] = {};
+
+      private:
+        template <std::size_t... Is>
+        consteval struct_string(gold::value_seq_t<Is...>, const char (& str)[N + 1])
+        : chars{str[Is]...} {}
+
+      public:
+        /// note: No explicit construct/copy/destroy for aggregate type.
+
+        /// ctor
+        // note: constructors are implicitly defined
+
+        /// dtor
+        // note: destructor is implicitly defined
+
+        /// assignments
+        // note: assignments are implicitly defined
+
+        // for string literals
+        consteval struct_string(const char(& str)[N + 1])
+        : struct_string(gold::make_index_seq<N + 1>, str) {}
+
+        // avoid making temporary array literals
+        // that might not include null terminator
+        consteval struct_string(char (&&) [N + 1]) = delete;
+
+        consteval struct_string(std::same_as<char> auto... args)
+            requires (sizeof...(args) == N)
+        : chars{args..., '\0'} {}
+
+        //// Iterator Access
+        constexpr iterator begin() const noexcept { return chars; }
+        constexpr iterator end() const noexcept { return chars + N; }
+
+        /// data
+        [[nodiscard]] constexpr pointer data() noexcept { return chars; }
+
+        /// view
+        constexpr std::string_view view() const& noexcept { return std::string_view{chars, N}; }
+        constexpr std::string_view view() && noexcept = delete;
+
+        /// operator string_view
+        constexpr operator std::string_view() const& noexcept { return view(); }
+        constexpr operator std::string_view() && noexcept = delete;
+
+        /// size
+        [[nodiscard]] static constexpr size_type size() noexcept { return N; }
+
+        /// empty
+        [[nodiscard]] static constexpr bool empty() noexcept { return N == 0; }
+
+        /// operator[]
+        constexpr reference operator[](size_type n) const noexcept { return chars[n]; }
+        constexpr reference operator[](size_type) const noexcept requires (N == 0) = delete;
+
+        /// front
+        constexpr reference front() const noexcept { return chars[0]; }
+        constexpr reference front() const noexcept requires (N == 0) = delete;
+
+        /// back
+        constexpr reference back() const noexcept { return chars[N - 1]; }
+        constexpr reference back() const noexcept requires (N == 0) = delete;
+
+        //// Comparisons
+        constexpr bool operator==(const struct_string&) const noexcept = default;
+
+        template <std::size_t M>
+            requires (M != N)
+        constexpr bool operator==(const struct_string<M>&) const noexcept {
+            return false;
+        }
+
+        constexpr std::strong_ordering operator<=>(const struct_string&) const noexcept = default;
+
+        template <std::size_t M>
+            requires (M != N)
+        constexpr std::strong_ordering operator<=>(const struct_string<M>& other) const noexcept {
+            constexpr size_type rlen = __algo::min_element({N, M});
+            int ret = traits_type::compare(chars, other.chars, rlen);
+            if (ret != 0)
+                return std::strong_ordering(ret);
+            return N <=> M;
+        }
+    };
+
+    template <std::size_t N>
+    struct_string(const char (&) [N]) -> struct_string<N - 1>;
+
+    template <std::same_as<char>... Ts>
+    struct_string(Ts...) -> struct_string<sizeof...(Ts)>;
+
+    namespace tuples {
+
+        /// tuples::enable_array_like<struct_string<N>>
+        template <std::size_t N>
+        inline constexpr bool enable_array_like<struct_string<N>> = true;
+
+    } // namespace tuples
+
+    inline namespace literals {
+        inline namespace struct_literals {
+
+            /// operator""_fs
+            template <struct_string S>
+            consteval auto operator""_fs() noexcept { return S; }
+
+        } // inline namespace struct_literals
+    } // inline namespace literals
+
+} // namespace gold
+
+#endif // __GOLD_STRUCT_STRING

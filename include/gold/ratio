@@ -1,14 +1,14 @@
 // <gold/ratio> - gold++ library
 
-// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+// Copyright (C) [ 2021 - 2024 ] - present Desmond Gold
 
 #pragma once
 #ifndef __GOLD_RATIO
 #define __GOLD_RATIO
 
 #include <limits>
-#include <gold/math_int>
 #include <gold/basic_types>
+#include <gold/bits/numeric/math_int.hpp>
 #include <gold/bits/type_traits/specialization_of.hpp>
 
 namespace gold {
@@ -20,26 +20,30 @@ namespace gold {
 
     namespace __ratio {
 
-        using yocto = ratio_t<1, gold::math::power(gold::intmax_t(10), 24)>;
-        using zepto = ratio_t<1, gold::math::power(gold::intmax_t(10), 21)>;
-        using atto  = ratio_t<1, gold::math::power(gold::intmax_t(10), 18)>;
-        using femto = ratio_t<1, gold::math::power(gold::intmax_t(10), 15)>;
-        using pico  = ratio_t<1, gold::math::power(gold::intmax_t(10), 12)>;
-        using nano  = ratio_t<1, gold::math::power(gold::intmax_t(10), 9)>;
-        using micro = ratio_t<1, gold::math::power(gold::intmax_t(10), 6)>;
-        using milli = ratio_t<1, gold::math::power(gold::intmax_t(10), 3)>;
-        using centi = ratio_t<1, gold::math::power(gold::intmax_t(10), 2)>;
-        using deci  = ratio_t<1, gold::math::power(gold::intmax_t(10), 1)>;
-        using deca  = ratio_t<gold::math::power(gold::intmax_t(10), 1), 1>;
-        using hecto = ratio_t<gold::math::power(gold::intmax_t(10), 2), 1>;
-        using kilo  = ratio_t<gold::math::power(gold::intmax_t(10), 3), 1>;
-        using mega  = ratio_t<gold::math::power(gold::intmax_t(10), 6), 1>;
-        using giga  = ratio_t<gold::math::power(gold::intmax_t(10), 9), 1>;
-        using tera  = ratio_t<gold::math::power(gold::intmax_t(10), 12), 1>;
-        using peta  = ratio_t<gold::math::power(gold::intmax_t(10), 15), 1>;
-        using exa   = ratio_t<gold::math::power(gold::intmax_t(10), 18), 1>;
-        using zetta = ratio_t<gold::math::power(gold::intmax_t(10), 21), 1>;
-        using yotta = ratio_t<gold::math::power(gold::intmax_t(10), 24), 1>;
+        using quecto = ratio_t<1, gold::math::power(gold::intmax_t(10), 30)>;
+        using ronto  = ratio_t<1, gold::math::power(gold::intmax_t(10), 27)>;
+        using yocto  = ratio_t<1, gold::math::power(gold::intmax_t(10), 24)>;
+        using zepto  = ratio_t<1, gold::math::power(gold::intmax_t(10), 21)>;
+        using atto   = ratio_t<1, gold::math::power(gold::intmax_t(10), 18)>;
+        using femto  = ratio_t<1, gold::math::power(gold::intmax_t(10), 15)>;
+        using pico   = ratio_t<1, gold::math::power(gold::intmax_t(10), 12)>;
+        using nano   = ratio_t<1, gold::math::power(gold::intmax_t(10), 9)>;
+        using micro  = ratio_t<1, gold::math::power(gold::intmax_t(10), 6)>;
+        using milli  = ratio_t<1, gold::math::power(gold::intmax_t(10), 3)>;
+        using centi  = ratio_t<1, gold::math::power(gold::intmax_t(10), 2)>;
+        using deci   = ratio_t<1, gold::math::power(gold::intmax_t(10), 1)>;
+        using deca   = ratio_t<gold::math::power(gold::intmax_t(10), 1), 1>;
+        using hecto  = ratio_t<gold::math::power(gold::intmax_t(10), 2), 1>;
+        using kilo   = ratio_t<gold::math::power(gold::intmax_t(10), 3), 1>;
+        using mega   = ratio_t<gold::math::power(gold::intmax_t(10), 6), 1>;
+        using giga   = ratio_t<gold::math::power(gold::intmax_t(10), 9), 1>;
+        using tera   = ratio_t<gold::math::power(gold::intmax_t(10), 12), 1>;
+        using peta   = ratio_t<gold::math::power(gold::intmax_t(10), 15), 1>;
+        using exa    = ratio_t<gold::math::power(gold::intmax_t(10), 18), 1>;
+        using zetta  = ratio_t<gold::math::power(gold::intmax_t(10), 21), 1>;
+        using yotta  = ratio_t<gold::math::power(gold::intmax_t(10), 24), 1>;
+        using ronna  = ratio_t<gold::math::power(gold::intmax_t(10), 27), 1>;
+        using quetta = ratio_t<gold::math::power(gold::intmax_t(10), 30), 1>;
 
         inline constexpr auto int_max_max = std::numeric_limits<gold::intmax_t>::max();
 
@@ -169,26 +173,30 @@ namespace gold {
     inline constexpr ratio_t<Num, Den> ratio {};
 
     //// Constants
-    inline constexpr __ratio::yocto yocto {};
-    inline constexpr __ratio::zepto zepto {};
-    inline constexpr __ratio::atto  atto  {};
-    inline constexpr __ratio::femto femto {};
-    inline constexpr __ratio::pico  pico  {};
-    inline constexpr __ratio::nano  nano  {};
-    inline constexpr __ratio::micro micro {};
-    inline constexpr __ratio::milli milli {};
-    inline constexpr __ratio::centi centi {};
-    inline constexpr __ratio::deci  deci  {};
-    inline constexpr __ratio::deca  deca  {};
-    inline constexpr __ratio::hecto hecto {};
-    inline constexpr __ratio::kilo  kilo  {};
-    inline constexpr __ratio::mega  mega  {};
-    inline constexpr __ratio::giga  giga  {};
-    inline constexpr __ratio::tera  tera  {};
-    inline constexpr __ratio::peta  peta  {};
-    inline constexpr __ratio::exa   exa   {};
-    inline constexpr __ratio::zetta zetta {};
-    inline constexpr __ratio::yotta yotta {};
+    inline constexpr __ratio::quecto quecto {};
+    inline constexpr __ratio::ronto  ronto  {};
+    inline constexpr __ratio::yocto  yocto  {};
+    inline constexpr __ratio::zepto  zepto  {};
+    inline constexpr __ratio::atto   atto   {};
+    inline constexpr __ratio::femto  femto  {};
+    inline constexpr __ratio::pico   pico   {};
+    inline constexpr __ratio::nano   nano   {};
+    inline constexpr __ratio::micro  micro  {};
+    inline constexpr __ratio::milli  milli  {};
+    inline constexpr __ratio::centi  centi  {};
+    inline constexpr __ratio::deci   deci   {};
+    inline constexpr __ratio::deca   deca   {};
+    inline constexpr __ratio::hecto  hecto  {};
+    inline constexpr __ratio::kilo   kilo   {};
+    inline constexpr __ratio::mega   mega   {};
+    inline constexpr __ratio::giga   giga   {};
+    inline constexpr __ratio::tera   tera   {};
+    inline constexpr __ratio::peta   peta   {};
+    inline constexpr __ratio::exa    exa    {};
+    inline constexpr __ratio::zetta  zetta  {};
+    inline constexpr __ratio::yotta  yotta  {};
+    inline constexpr __ratio::ronna  ronna  {};
+    inline constexpr __ratio::quetta quetta {};
 
     /// to_ratio
     template <std::floating_point auto N, gold::intmax_t Prec = 1000000000>

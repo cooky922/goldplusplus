@@ -105,26 +105,29 @@ namespace gold {
         console_type& unformatted_print(std::string_view);
 
         /// print
-        console_type& print(std::string_view sv, const auto&... args) {
+        template <typename... Args>
+        console_type& print(gold::format_string<Args...> fmt, Args&&... args) {
             if constexpr (sizeof...(args) == 0)
-                return unformatted_print(sv);
+                return unformatted_print(fmt.get());
             else {
-                auto output_text = gold::format(sv, args...);
+                auto output_text = gold::vformat(fmt.get(), gold::make_format_args(args...));
                 return unformatted_print(output_text);
             }
         }
 
         /// print_at - the next cursor will be the original before printing
-        console_type& print_at(consoles::coord_record c, std::string_view sv, const auto&... args) {
+        template <typename... Args>
+        console_type& print_at(consoles::coord_record c, gold::format_string<Args...> fmt, Args&&... args) {
             auto original_cursor = this->cursor_pos();
             this->cursor_pos(c);
-            this->print(sv, args...);
+            this->print(gold::unchecked_format_string(fmt.get()), args...);
             return this->cursor_pos(original_cursor);
         }
 
         /// printline
-        console_type& printline(std::string_view sv, const auto&... args) {
-            this->print(sv, args...);
+        template <typename... Args>
+        console_type& printline(gold::format_string<Args...> fmt, Args&&... args) {
+            this->print(gold::unchecked_format_string(fmt.get()), args...);
             return this->print_char('\n');
         }
 
@@ -137,7 +140,7 @@ namespace gold {
         /// scanline
         std::string scanline();
 
-        /// scan_input
+        /// [TODO] scan_input
 
         /// scan_mouse_input
         consoles::mouse_event_record scan_mouse_input();
@@ -145,7 +148,7 @@ namespace gold {
         /// scan_key_input
         consoles::key_event_record scan_key_input();
 
-        /// scan_output
+        /// [TODO] scan_output
 
         /// clear
         console_type& clear();
@@ -158,7 +161,7 @@ namespace gold {
         /// color_screen
         console_type& color_screen(consoles::color_kind);
 
-        /// partial_color
+        /// [TODO] partial_color
 
         /// pause
         console_type& pause();

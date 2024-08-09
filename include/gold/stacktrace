@@ -1,19 +1,30 @@
 // <gold/stacktrace> - gold++ library
 
-// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+// Copyright (C) [ 2021 - 2024 ] - present Desmond Gold
 
 #pragma once
 #ifndef __GOLD_STACKTRACE
 #define __GOLD_STACKTRACE
 
-#include <compare>
 #include <string>
 #include <vector>
 #include <cstddef>
+#if __has_include(<bits/compare.h>)
+#include <bits/compare.h>
+#else
+#include <compare>
+#endif
 
 namespace gold {
 
     namespace __stacktrace { struct impl; } // not defined
+
+    /// stacktrace_style
+    enum class stacktrace_style {
+        by_source,
+        by_module,
+        by_default = by_module
+    };
 
     /// stacktrace [fwd]
     class stacktrace;
@@ -21,7 +32,8 @@ namespace gold {
     /// stacktrace_entry
     class stacktrace_entry {
       public:
-        using native_handle_type = std::uintptr_t;
+        using native_handle_type = __UINTPTR_TYPE__;
+        using uint32_t           = __UINT32_TYPE__;
 
       private:
         native_handle_type m_pc_ = -1;
@@ -50,6 +62,8 @@ namespace gold {
         //// queries
         std::string function_name() const;
         std::string module_file_name() const;
+        std::string source_file_name() const;
+        uint32_t source_line() const;
 
         //// comparisons
         constexpr bool operator==(const stacktrace_entry&) const noexcept = default;
@@ -86,6 +100,10 @@ namespace gold {
         stacktrace& operator=(const stacktrace&) = default;
         stacktrace& operator=(stacktrace&&) noexcept = default;
 
+        //// styles
+        static stacktrace_style style() noexcept;
+        static void style(stacktrace_style) noexcept;
+
         //// creations, 'current'
         static stacktrace current() noexcept;
         static stacktrace current(size_type) noexcept;
@@ -93,8 +111,10 @@ namespace gold {
 
         //// iterator and element access
         const_iterator begin() const noexcept { return m_entries_.begin(); }
-        const_iterator end() const noexcept { return m_entries_.end(); }
-        const_reverse_iterator rbegin() const noexcept { return m_entries_.rbegin(); }
+        const_iterator end() const noexcept { return begin() + size(); }
+        const_reverse_iterator rbegin() const noexcept {
+            return style() == stacktrace_style::by_module ? m_entries_.rbegin() : m_entries_.rbegin() + 4;
+        }
         const_reverse_iterator rend() const noexcept { return m_entries_.rend(); }
 
         const_iterator cbegin() const noexcept { return begin(); }
@@ -102,8 +122,8 @@ namespace gold {
         const_reverse_iterator crbegin() const noexcept { return rbegin(); }
         const_reverse_iterator crend() const noexcept { return rend(); }
 
-        [[nodiscard]] bool empty() const noexcept { return m_entries_.empty(); }
-        size_type size() const noexcept { return m_entries_.size(); }
+        [[nodiscard]] bool empty() const noexcept { return size() == 0; }
+        size_type size() const noexcept { return style() == stacktrace_style::by_module ? m_entries_.size() : (m_entries_.size() - 4); }
         size_type max_size() const noexcept { return m_entries_.max_size(); }
 
         const_reference operator[](size_type n) const noexcept {
@@ -112,7 +132,7 @@ namespace gold {
         }
 
         const_reference at(size_type n) const {
-            // [[precondition: n < size()]] otherwise, throwing exception
+            // [[precondition: n < size()]] otherwise, propagating exception
             return m_entries_.at(n);
         }
 
