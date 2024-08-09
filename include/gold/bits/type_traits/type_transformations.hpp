@@ -1,6 +1,6 @@
 // <gold/bits/type_traits/type_transformations.hpp> - gold++ library
 
-// Copyright (C) 2021 - present Desmond Gold
+// Copyright (C) [ 2021 - 2024 ] - present Desmond Gold
 
 // note: internal header
 
@@ -9,15 +9,11 @@
 #define __GOLD_BITS_TYPE_TRAITS_TYPE_TRANSFORMATIONS_HPP
 
 #include <type_traits>
+#include <gold/bits/type_traits/conditional.hpp>
 
 namespace gold {
 
-    /// conditional_t
-    template <bool Cond, typename TrueType, typename FalseType>
-    using conditional_t = std::__conditional_t<Cond, TrueType, FalseType>;
-
-    template <bool Cond, typename TrueType, typename FalseType>
-    using conditional = std::type_identity<conditional_t<Cond, TrueType, FalseType>>;
+    /// conditional[_t] [ defined in <gold/bits/type_traits/conditional.hpp> ]
 
     /// conditionals
     template <typename Bool, typename T, typename... R>
@@ -41,44 +37,6 @@ namespace gold {
     /// conditionals_t
     template <typename Bool, typename T, typename... R>
     using conditionals_t = typename conditionals<Bool, T, R...>::type;
-
-    namespace __type_trait {
-
-        // workaround since direct template alias of 'decltype(auto(<expr>))' is currently ICE
-        /// __type_trait::decay
-        template <typename>
-        struct decay;
-
-        // partial specialization
-        template <typename T>
-            requires requires { auto(std::declval<T>()); }
-        struct decay<T> {
-            using type = decltype(auto(std::declval<T>()));
-        };
-
-        // primary template definition
-        template <typename T>
-        struct decay {
-            using type = std::remove_cvref_t<T>;
-        };
-
-    } // namespace __type_trait
-
-    /// decay_t
-    template <typename T>
-    using decay_t = __type_trait::decay<T>::type;
-
-    /// decay
-    template <typename T>
-    using decay = std::type_identity<decay_t<T>>;
-
-    /// decay_if_t
-    template <bool Cond, typename T>
-    using decay_if_t = conditional_t<Cond, decay_t<T>, T>;
-
-    /// decay_if
-    template <bool Cond, typename T>
-    using decay_if = std::type_identity<decay_if_t<Cond, T>>;
 
     /// invoke_class_template
     template <template <typename...> typename Temp, typename... Ts>
@@ -120,6 +78,31 @@ namespace gold {
     /// disable_if_t
     template <bool B, typename T = void>
     using disable_if_t = typename disable_if<B, T>::type;
+
+    namespace __type_trait {
+
+        /// __type_trait::copy_ref
+        template <typename To, typename From>
+        using copy_ref = gold::conditional_t<std::is_lvalue_reference_v<From>, To&, To>;
+
+        /// __type_trait::remove_ref_if_xval
+        template <typename T>
+        using remove_ref_if_xval = gold::conditional_t<std::is_rvalue_reference_v<T>, std::remove_reference_t<T>, T>;
+
+        /// __type_trait::copy_cv
+        template <typename To, typename From>
+        using copy_cv = gold::conditional_t<std::is_const_v<From>, const To, To>;
+
+    } // namespace __type_trait
+
+    /// copy_cvref_t
+    template <typename To, typename From>
+    using copy_cvref_t = __type_trait::copy_ref<__type_trait::copy_cv<To, From>, From>;
+
+    /// forward_like_t
+    // without rvalue references
+    template <typename To, typename From>
+    using forward_like_t = __type_trait::remove_ref_if_xval<copy_cvref_t<To, From>>;
 
 } // namespace gold
 

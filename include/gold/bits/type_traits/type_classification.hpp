@@ -1,6 +1,6 @@
 // <gold/bits/type_traits/type_classification.hpp> - gold++ library
 
-// Copyright (C) 2021 - present Desmond Gold
+// Copyright (C) [ 2021 - 2024 ] - present Desmond Gold
 
 // note: internal header
 
@@ -9,7 +9,11 @@
 #define __GOLD_BITS_TYPE_TRAITS_TYPE_CLASSIFICATION_HPP
 
 #include <type_traits>
+#if __has_include(<bits/compare.h>)
+#include <bits/compare.h>
+#else
 #include <compare>
+#endif
 
 namespace gold {
 
@@ -34,7 +38,7 @@ namespace gold {
 
     /// is_char
     template <typename T>
-    using is_char = std::bool_constant<is_char_v<T>>;
+    struct is_char : std::bool_constant<is_char_v<T>> {};
 
     /// is_ordering_type_v
     template <typename T>
@@ -51,7 +55,7 @@ namespace gold {
 
     /// is_ordering_type
     template <typename T>
-    using is_ordering_type = std::bool_constant<is_ordering_type_v<T>>;
+    struct is_ordering_type : std::bool_constant<is_ordering_type_v<T>> {};
 
 } // namespace gold
 

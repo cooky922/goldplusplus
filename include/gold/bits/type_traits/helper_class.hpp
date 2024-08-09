@@ -1,6 +1,6 @@
 // <gold/bits/type_traits/helper_class.hpp> - gold++ library
 
-// Copyright (C) 2021 - present Desmond Gold
+// Copyright (C) [ 2021 - 2024 ] - present Desmond Gold
 
 // note: internal header
 
@@ -11,9 +11,6 @@
 #include <type_traits>
 
 namespace gold {
-
-    /// type_sentinel
-    struct type_sentinel {};
 
     /// types_inherited
     template <typename... Ts>

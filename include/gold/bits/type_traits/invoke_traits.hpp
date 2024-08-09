@@ -1,6 +1,6 @@
 // <gold/bits/type_traits/invoke_traits.hpp> - gold++ library
 
-// Copyright (C) 2021 - present Desmond Gold
+// Copyright (C) [ 2021 - 2024 ] - present Desmond Gold
 
 // note: internal header
 
@@ -1146,6 +1146,12 @@ namespace gold {
     template <typename R, typename... Args>
     struct invoke_arity<R(*)(Args......)> : std::integral_constant<std::size_t, 1 + sizeof...(Args)> {};
 
+//    template <typename R, typename... Args>
+//    struct invoke_arity<R(&)(Args...)> : std::integral_constant<std::size_t, sizeof...(Args)> {};
+//
+//    template <typename R, typename... Args>
+//    struct invoke_arity<R(&)(Args......)> : std::integral_constant<std::size_t, 1 + sizeof...(Args)> {};
+
     template <typename T>
         requires std::is_member_object_pointer_v<T>
     struct invoke_arity<T> : std::integral_constant<std::size_t, 1> {};
@@ -1155,9 +1161,7 @@ namespace gold {
     struct invoke_arity<T> : std::integral_constant<std::size_t, 1 + invoke_arity<pm_member_type_t<T>>::value> {};
 
     template <typename T>
-        requires requires {
-            &T::operator();
-        }
+        requires requires { &T::operator(); }
     struct invoke_arity<T> : std::integral_constant<
         std::size_t, invoke_arity<pm_member_type_t<decltype(&T::operator())>>::value
     > {};
@@ -1199,6 +1203,12 @@ namespace gold {
     template <typename R, typename... Args>
     struct invoke_return<R(*)(Args......)> : std::type_identity<R> {};
 
+//    template <typename R, typename... Args>
+//    struct invoke_return<R(&)(Args...)> : std::type_identity<R> {};
+//
+//    template <typename R, typename... Args>
+//    struct invoke_return<R(&)(Args......)> : std::type_identity<R> {};
+
     template <typename T>
         requires std::is_member_object_pointer_v<T>
     struct invoke_return<T> : std::type_identity<pm_member_type_t<T>> {};
@@ -1208,9 +1218,7 @@ namespace gold {
     struct invoke_return<T> : invoke_return<pm_member_type_t<T>> {};
 
     template <typename T>
-        requires requires {
-            &T::operator();
-        }
+        requires requires { &T::operator(); }
     struct invoke_return<T> : invoke_return<decltype(&T::operator())> {};
 
     /// invoke_return_t
@@ -1260,6 +1268,16 @@ namespace gold {
         va_args_tag_t,
         gold::pack_element_at<I, Args...>
     > {};
+
+//    template <std::size_t I, typename R, typename... Args>
+//    struct invoke_parameter<R(&)(Args...), I> : std::type_identity<gold::pack_element_at<I, Args...>> {};
+//
+//    template <std::size_t I, typename R, typename... Args>
+//    struct invoke_parameter<R(&)(Args......), I> : std::conditional<
+//        I == sizeof...(Args),
+//        va_args_tag_t,
+//        gold::pack_element_at<I, Args...>
+//    > {};
 
     template <std::size_t I, typename T>
         requires (std::is_member_object_pointer_v<T> && I == 0)

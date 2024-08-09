@@ -1,6 +1,6 @@
 // <gold/bits/type_traits/specialization_of.hpp> - gold++ library
 
-// Copyright (C) 2021 - present Desmond Gold
+// Copyright (C) [ 2021 - 2024 ] - present Desmond Gold
 
 // note: internal header
 

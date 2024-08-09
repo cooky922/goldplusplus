@@ -1,6 +1,6 @@
 // <gold/bits/type_traits/type_properties.hpp> - gold++ library
 
-// Copyright (C) 2021 - present Desmond Gold
+// Copyright (C) [ 2021 - 2024 ] - present Desmond Gold
 
 // note: internal header
 
@@ -9,6 +9,7 @@
 #define __GOLD_BITS_TYPE_TRAITS_TYPE_PROPERTIES
 
 #include <gold/bits/type_traits/helper_class.hpp>
+#include <gold/bits/non_type.hpp>
 
 namespace gold {
 
@@ -19,21 +20,15 @@ namespace gold {
 
     /// is_complete_type
     template <typename T>
-    using is_complete_type = std::bool_constant<is_complete_type_v<T>>;
-
-    namespace __detail {
-
-        template <auto> struct nttp_test_ {};
-
-    } // namespace __detail
+    struct is_complete_type : std::bool_constant<is_complete_type_v<T>> {};
 
     /// is_structural_v
     template <typename T>
-    inline constexpr bool is_structural_v = requires { []<T N>(__detail::nttp_test_<N>){}; };
+    inline constexpr bool is_structural_v = requires { []<T N>(non_type_t<N>){}; };
 
     /// is_structural
     template <typename T>
-    using is_structural = std::bool_constant<is_structural_v<T>>;
+    struct is_structural : std::bool_constant<is_structural_v<T>> {};
 
     //// Type Property Queries
     /// pointer_rank_v
@@ -43,9 +38,19 @@ namespace gold {
     template <typename T>
     inline constexpr std::size_t pointer_rank_v<T*> = pointer_rank_v<T> + 1;
 
+    // optimized: unrolling
+    template <typename T>
+    inline constexpr std::size_t pointer_rank_v<T**> = pointer_rank_v<T> + 2;
+
+    template <typename T>
+    inline constexpr std::size_t pointer_rank_v<T***> = pointer_rank_v<T> + 3;
+
+    template <typename T>
+    inline constexpr std::size_t pointer_rank_v<T*****> = pointer_rank_v<T> + 5;
+
     /// pointer_rank
     template <typename T>
-    using pointer_rank = size_constant<pointer_rank_v<T>>;
+    struct pointer_rank : size_constant<pointer_rank_v<T>> {};
 
 } // namespace gold
 

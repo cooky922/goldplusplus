@@ -1,6 +1,6 @@
 // <gold/bits/type_traits/type_relationships.hpp> - gold++ library
 
-// Copyright (C) 2021 - present Desmond Gold
+// Copyright (C) [ 2021 - 2024 ] - present Desmond Gold
 
 // note: internal header
 
@@ -18,7 +18,7 @@ namespace gold {
 
     /// is_not_same
     template <typename T, typename U>
-    using is_not_same = std::bool_constant<is_not_same_v<T, U>>;
+    struct is_not_same : std::bool_constant<is_not_same_v<T, U>> {};
 
     /// are_same_v
     template <typename T, typename... Ts>
@@ -26,7 +26,7 @@ namespace gold {
 
     /// are_same
     template <typename T, typename... Ts>
-    using are_same = std::bool_constant<are_same_v<T, Ts...>>;
+    struct are_same : std::bool_constant<are_same_v<T, Ts...>> {};
 
     /// are_not_same_v
     template <typename T, typename... Ts>
@@ -34,7 +34,7 @@ namespace gold {
 
     /// are_not_same
     template <typename T, typename... Ts>
-    using are_not_same = std::bool_constant<are_not_same_v<T, Ts...>>;
+    struct are_not_same : std::bool_constant<are_not_same_v<T, Ts...>> {};
 
     /// is_any_of_v
     template <typename T, typename... Ts>
@@ -42,26 +42,17 @@ namespace gold {
 
     /// is_any_of
     template <typename T, typename... Ts>
-    using is_any_of = std::bool_constant<is_any_of_v<T, Ts...>>;
+    struct is_any_of : std::bool_constant<is_any_of_v<T, Ts...>> {};
 
-    namespace __detail {
-        template <typename From, typename To, typename = void>
-        struct is_narrowing_convertible_impl_ : std::true_type {};
-
-        template <typename From, typename To>
-        struct is_narrowing_convertible_impl_<From, To, std::void_t<
-            decltype(To{std::declval<From>()})
-        >> : std::false_type {};
-
-    } // namespace __detail
-
-    /// is_narrowing_convertible
+    /// is_convertible_without_narrowing_v
     template <typename From, typename To>
-    struct is_narrowing_convertible : __detail::is_narrowing_convertible_impl_<From, To> {};
+    inline constexpr bool is_convertible_without_narrowing_v =
+        __is_convertible(From, To) &&
+        requires (From from) { To { from }; };
 
-    /// is_narrowing_convertible_v
+    /// is_convertible_without_narrowing
     template <typename From, typename To>
-    inline constexpr bool is_narrowing_convertible_v = is_narrowing_convertible<From, To>::value;
+    struct is_convertible_without_narrowing : std::bool_constant<is_convertible_without_narrowing_v<From, To>> {};
 
 } // namespace gold
 
