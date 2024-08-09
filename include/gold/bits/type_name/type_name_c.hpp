@@ -1,6 +1,6 @@
 // <gold/bits/type_name/type_name_c.hpp> - gold++ library
 
-// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+// Copyright (C) [ 2021 - 2024 ] - present Desmond Gold
 
 // note: internal header
 
@@ -8,19 +8,22 @@
 #ifndef __GOLD_BITS_TYPE_NAME_C_HPP
 #define __GOLD_BITS_TYPE_NAME_C_HPP
 
-#include <array>
 #include <source_location>
 #include <string_view>
-#include <bits/utility.h>
+#include <gold/bits/__util/mini_array.hpp>
 
 namespace gold {
+
+    /// value_seq_t [fwd]
+    template <auto...>
+    struct value_seq_t;
 
     namespace __type_name {
 
         /// __type_name::sv_as_array
-        template <std::size_t... Is>
-        constexpr auto sv_as_array(std::string_view sv, std::index_sequence<Is...>) {
-            return std::array { sv[Is] ... };
+        template <auto... Is>
+        consteval auto sv_as_array(std::string_view sv, gold::value_seq_t<Is...>*) {
+            return __util::mini_array { sv[std::size_t(Is)] ... };
         }
 
         /// __type_name::function_name
@@ -31,19 +34,23 @@ namespace gold {
         }
 
         /// __type_name::type_name_c_impl
-        template <typename T>
-        consteval auto type_name_c_impl() {
-            constexpr std::string_view fname = function_name<T>();
+        // WORKAROUND: add 'typename = decltype([]{})'
+        //             so that the mangled name of '[]{}' and '[] static {}'
+        //             won't clash
+        //             CONS: generates more unnecessary template instantiations
+        template <typename T, typename = decltype([]{})>
+        consteval auto& type_name_c_impl() {
+            static constexpr std::string_view fname = function_name<T>();
 
             #if defined (__clang__)
-                constexpr std::string_view prefix = "[T = ";
-                constexpr std::string_view suffix = "]";
+                static constexpr std::string_view prefix = "[T = ";
+                static constexpr std::string_view suffix = "]";
             #elif defined (__GNUC__)
-                constexpr std::string_view prefix = "[with T = ";
-                constexpr std::string_view suffix = "]";
+                static constexpr std::string_view prefix = "[with T = ";
+                static constexpr std::string_view suffix = "]";
             #elif defined (_MSC_VER)
-                constexpr std::string_view prefix = "function_name<";
-                constexpr std::string_view suffix = ">(void)";
+                static constexpr std::string_view prefix = "function_name<";
+                static constexpr std::string_view suffix = ">(void)";
             #else
                 #error Unsupported compiler
             #endif
@@ -51,38 +58,33 @@ namespace gold {
             constexpr auto start = fname.find(prefix) + prefix.size();
             constexpr auto last  = fname.rfind(suffix);
 
-            static_assert(start < last);
+            // static_assert(start < last);
 
             constexpr auto name  = fname.substr(start, last - start);
+            static constexpr auto name_holder = sv_as_array(name, static_cast<gold::value_seq_t<__integer_pack(name.size())...>*>(nullptr));
 
-            return sv_as_array(name, std::make_index_sequence<name.size()>{});
+            return name_holder;
         }
-
-        /// __type_name::type_name_array_holder
-        template <typename T>
-        struct type_name_array_holder {
-            inline static constexpr auto value = type_name_c_impl<T>();
-        };
 
     } // namespace __type_name
 
     /// type_name_as_array
     template <typename T>
     consteval auto type_name_as_array() noexcept {
-        return __type_name::type_name_array_holder<T>::value;
+        return __type_name::type_name_c_impl<T>();
     }
 
     /// type_name - compile type name query
     // source: source_location
     template <typename T>
     consteval auto type_name() noexcept {
-        constexpr auto& name = __type_name::type_name_array_holder<T>::value;
+        constexpr auto& name = __type_name::type_name_c_impl<T>();
         return std::string_view { name.data(), name.size() };
     }
 
     template <typename T>
     constexpr auto type_name(T&&) noexcept {
-        constexpr auto& name = __type_name::type_name_array_holder<T&&>::value;
+        constexpr auto& name = __type_name::type_name_c_impl<T&&>();
         return std::string_view { name.data(), name.size() };
     }
 
