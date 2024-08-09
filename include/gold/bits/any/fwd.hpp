@@ -1,6 +1,6 @@
 // <gold/bits/any/fwd.hpp> - gold++ library
 
-// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+// Copyright (C) [ 2021 - 2023 ] - present Desmond Gold
 
 // note: internal header
 
@@ -31,6 +31,14 @@ namespace gold {
         struct manager_result;
 
     } // namespace __any
+
+    /// in_place_viewable_t
+    struct in_place_viewable_t {
+        constexpr explicit in_place_viewable_t() noexcept = default;
+    };
+
+    /// in_place_viewable
+    inline constexpr in_place_viewable_t in_place_viewable {};
 
 } // namespace gold
 

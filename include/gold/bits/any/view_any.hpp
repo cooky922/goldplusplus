@@ -1,6 +1,6 @@
 // <gold/bits/any/view_any.hpp> - gold++ library
 
-// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+// Copyright (C) [ 2021 - 2023 ] - present Desmond Gold
 
 // note: internal header
 
@@ -19,10 +19,7 @@ namespace gold {
     /// view_any
     class view_any {
       private:
-        union {
-            __any::base_storage* m_cptr_;
-            void*                m_rptr_;
-        };
+        void* m_ptr_ = nullptr;
         auto (* m_manager_) (__any::manager_action, const view_any*, view_any*) -> __any::manager_result = nullptr;
 
         template <typename, typename>
@@ -43,11 +40,10 @@ namespace gold {
         static constexpr T* s_cast_to_ptr_(view_any* op) noexcept {
             const bool not_null = op && op->has_value() && holds_current_type<T>(*op) && !std::is_function_v<T>;
             if (not_null) {
+                auto result = op->mf_manage_(__any::manager_action::do_get_data).rget;
                 if consteval {
-                    auto result = op->mf_manage_(__any::manager_action::do_cget).cget;
-                    return static_cast<__any::derived_view_storage<T>*>(result)->ptr;
+                    return gold::__util::cast_from_vptr<T*>(result);
                 } else {
-                    auto result = op->mf_manage_(__any::manager_action::do_rget).rget;
                     return static_cast<T*>(result);
                 }
             }
@@ -59,15 +55,23 @@ namespace gold {
             return s_cast_to_ptr_<T>(const_cast<view_any*>(op));
         }
 
+        template <typename T>
+        static constexpr T s_cast_to_ptr_(in_place_viewable_t, const view_any* op) noexcept {
+            const bool not_null = op && op->has_value() && holds_current_type<T>(*op) && !std::is_function_v<T>;
+            if (not_null) {
+                auto result = op->mf_manage_(__any::manager_action::do_get_data).rget;
+                if consteval {
+                    return gold::__util::cast_from_vptr<T>(result);
+                } else {
+                    return static_cast<T>(result);
+                }
+            }
+            return nullptr;
+        }
+
         /// private ctor
         constexpr view_any(__any::mini_view_any other)
-        : m_manager_(other.m_manager_) {
-            if consteval {
-                m_cptr_ = other.m_cptr_;
-            } else {
-                m_rptr_ = other.m_rptr_;
-            }
-        }
+        : m_ptr_(other.m_ptr_), m_manager_(other.m_manager_) {}
 
         friend any;
         friend unique_any;
@@ -75,11 +79,7 @@ namespace gold {
       public:
 
         /// default ctor
-        constexpr view_any() noexcept
-        : m_manager_(nullptr) {
-            if consteval { m_cptr_ = nullptr; }
-            else { m_rptr_ = nullptr; }
-        }
+        constexpr view_any() noexcept = default;
 
         /// copy ctor
         constexpr view_any(const view_any& other) {
@@ -97,7 +97,17 @@ namespace gold {
         template <typename T>
             requires (!std::is_same_v<std::remove_cvref_t<T>, view_any> && !std::is_function_v<std::remove_cvref_t<T>>)
         constexpr view_any(T& op) {
-                manager_type<std::remove_cvref_t<T>>::s_create_(*this, const_cast<std::remove_cvref_t<T>&>(op));
+            manager_type<std::remove_cvref_t<T>>::s_create_(*this, const_cast<std::remove_cvref_t<T>&>(op));
+        }
+
+        template <typename T>
+            requires std::is_object_v<T>
+        constexpr view_any(in_place_viewable_t, T* ptr) {
+            if consteval {
+                if (!__builtin_constant_p(*ptr))
+                    return;
+            }
+            manager_type<__any::viewable_ptr<T*>>::s_create_(*this, ptr);
         }
 
         template <typename T>
@@ -252,6 +262,13 @@ namespace gold {
         }
 
         template <typename T>
+            requires std::is_pointer_v<T>
+                  && std::is_object_v<std::remove_pointer_t<T>>
+        friend constexpr T any_cast(in_place_viewable_t, const view_any* op) noexcept {
+            return s_cast_to_ptr_<T>(in_place_viewable, op);
+        }
+
+        template <typename T>
             requires (!std::is_reference_v<T>)
         friend constexpr decltype(auto) any_cast(view_any op) { // pass by value, since it's "cheap"
             auto* result = s_cast_to_ptr_<T>(&op);
@@ -260,6 +277,18 @@ namespace gold {
                 else { throw bad_any_access("bad any cast"); }
             }
             return *result;
+        }
+
+        template <typename T>
+            requires std::is_pointer_v<T>
+                  && std::is_object_v<std::remove_pointer_t<T>>
+        friend constexpr T any_cast(in_place_viewable_t, view_any op) {
+            auto* result = s_cast_to_ptr_<T>(in_place_viewable, &op);
+            if (result == nullptr) {
+                if consteval { __bad_any_access::bad_cast(); }
+                else { throw bad_any_access("bad any cast"); }
+            }
+            return result;
         }
     };
 

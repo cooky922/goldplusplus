@@ -19,15 +19,6 @@ namespace gold::__any {
     /// __any::base_storage
     struct base_storage {};
 
-    /// __any::derived_view_storage
-    template <typename T>
-    struct derived_view_storage : base_storage {
-        T* ptr;
-
-        constexpr explicit derived_view_storage(T& op) noexcept
-        : ptr(std::addressof(op)) {}
-    };
-
     /// __any::derived_storage
     template <typename T>
     struct derived_storage : base_storage {

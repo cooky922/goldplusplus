@@ -14,7 +14,7 @@
 
 namespace gold {
 
-    inline namespace __cpo_access {
+    namespace __cpo_access {
 
         /// __cpo_access::holds_current_type_fn [internal use]
         template <typename T>
@@ -23,7 +23,7 @@ namespace gold {
                 requires requires (const Any& op) {
                     { holds_current_type<T>(op) } noexcept -> std::convertible_to<bool>;
                 }
-            constexpr bool operator()(const Any& op) const noexcept {
+            static constexpr bool operator()(const Any& op) noexcept {
                 return holds_current_type<T>(op);
             }
         };
@@ -38,12 +38,17 @@ namespace gold {
                 { any_cast<T>(std::forward<Any>(op)) };
             };
 
+            template <typename Any>
+            inline static constexpr bool s_has_already_ref_adl_with_in_place_viewable_ = requires (Any op) {
+                { any_cast<T>(in_place_viewable, op) };
+            };
+
             // for pointer overloads:
             template <typename Any>
                 requires requires (Any* op) {
                     { any_cast<T>(op) } noexcept -> std::same_as<T*>;
                 }
-            constexpr T* operator()(Any* op) const noexcept {
+            static constexpr T* operator()(Any* op) noexcept {
                 return any_cast<T>(op);
             }
 
@@ -51,21 +56,21 @@ namespace gold {
                 requires requires (const Any* op) {
                     { any_cast<T>(op) } noexcept -> std::same_as<const T*>;
                 }
-            constexpr const T* operator()(const Any* op) const noexcept {
+            static constexpr const T* operator()(const Any* op) noexcept {
                 return any_cast<T>(op);
             }
 
             // for reference overloads:
             template <typename Any>
                 requires (!std::is_pointer_v<std::remove_cvref_t<Any>> && s_has_already_ref_adl_<Any>)
-            constexpr decltype(auto) operator()(Any&& op) const {
+            static constexpr decltype(auto) operator()(Any&& op) {
                 return any_cast<T>(std::forward<Any>(op));
             }
 
             template <typename Any>
                 requires (!s_has_already_ref_adl_<Any>)
-            constexpr auto& operator()(Any& op) const {
-                auto* temp = (*this)(std::addressof(op));
+            static constexpr auto& operator()(Any& op) {
+                auto* temp = operator()(std::addressof(op));
                 if (temp == nullptr) {
                     if consteval { __bad_any_access::bad_cast(); }
                     else { throw bad_any_access("bad any cast"); }
@@ -75,8 +80,8 @@ namespace gold {
 
             template <typename Any>
                 requires (!s_has_already_ref_adl_<Any>)
-            constexpr const auto& operator()(const Any& op) const {
-                auto* temp = (*this)(std::addressof(as_mutable(op)));
+            static constexpr const auto& operator()(const Any& op) {
+                auto* temp = operator()(std::addressof(as_mutable(op)));
                 if (temp == nullptr) {
                     if consteval { __bad_any_access::bad_cast(); }
                     else { throw bad_any_access("bad any cast"); }
@@ -86,8 +91,8 @@ namespace gold {
 
             template <typename Any>
                 requires (!std::is_lvalue_reference_v<Any> && !s_has_already_ref_adl_<Any>)
-            constexpr auto operator()(Any&& op) const {
-                auto* temp = (*this)(std::addressof(op));
+            static constexpr auto operator()(Any&& op) {
+                auto* temp = operator()(std::addressof(op));
                 if (temp == nullptr) {
                     if consteval { __bad_any_access::bad_cast(); }
                     else { throw bad_any_access("bad any cast"); }
@@ -95,8 +100,28 @@ namespace gold {
                 return std::move(*temp);
             }
 
+            // for view_any specifically
             template <typename Any>
-            constexpr auto operator()(const Any&&) const = delete;
+                requires std::is_pointer_v<T>
+                      && std::is_object_v<std::remove_pointer_t<T>>
+                      && std::same_as<Any, view_any>
+                      && s_has_already_ref_adl_with_in_place_viewable_<Any>
+            static constexpr auto operator()(in_place_viewable_t, Any op) {
+                return any_cast<T>(in_place_viewable, op);
+            }
+
+            template <typename Any>
+                requires requires (const Any* op) {
+                    { any_cast<T>(in_place_viewable, op) } noexcept -> std::same_as<T>;
+                } && std::is_pointer_v<T>
+                  && std::is_object_v<std::remove_pointer_t<T>>
+                  && std::same_as<Any, view_any>
+            static constexpr auto operator()(in_place_viewable_t, const Any* op) noexcept {
+                return any_cast<T>(in_place_viewable, op);
+            }
+
+            template <typename Any>
+            static constexpr auto operator()(const Any&&) = delete;
 
         };
 

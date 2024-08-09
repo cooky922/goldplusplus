@@ -1,6 +1,6 @@
 // <gold/bits/any/any.hpp> - gold++ library
 
-// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+// Copyright (C) [ 2021 - 2024 ] - present Desmond Gold
 
 // note: internal header
 
@@ -144,7 +144,7 @@ namespace gold {
                 this->mf_manage_(__any::manager_action::do_swap, &other);
             else if (this->has_value())
                 this->mf_manage_(__any::manager_action::do_move, &other);
-            else
+            else if (other.has_value())
                 other.mf_manage_(__any::manager_action::do_move, this);
         }
 
