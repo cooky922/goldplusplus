@@ -101,11 +101,10 @@ namespace gold::ranges {
             struct delimit_fn {
                 static constexpr std::size_t arity = 2;
 
-                // TODO:
-                template <typename R, typename T>
-                    // requires can_delimit_view<R, T>
+                template <typename R, typename T, typename E = std::remove_cvref_t<R>>
+                    requires (!std::ranges::range<E> && std::input_iterator<E>) ||
+                              can_delimit_view<R, T>
                 static constexpr auto operator()(R&& r, T&& val) {
-                    using E = std::remove_cvref_t<R>;
                     if constexpr (!std::ranges::range<E> && std::input_iterator<E>)
                         return delimit_view { std::ranges::subrange(std::forward<R>(r), std::unreachable_sentinel),
                                               std::forward<T>(val) };
