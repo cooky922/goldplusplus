@@ -104,7 +104,7 @@
 * `[gold++.gui]` GUI Library
 * `[gold++.os]` OS Wrapper Library
 * `[gold++.io]` I/O Library
-   `[gold++.io.events]` I/O Event Handling
+   * `[gold++.io.events]` I/O Event Handling
 * `[gold++.data]` Data Processing
    * `[gold++.data.csv]`
    * `[gold++.data.xml]`
