@@ -16,6 +16,7 @@
 #include <ranges>
 #endif
 #include <bits/refwrap.h>
+#include <gold/bits/__util/like_t.hpp>
 
 namespace gold::ranges {
 
@@ -133,6 +134,12 @@ namespace gold::ranges {
 
             inline static constexpr bool _S_has_simple_call_op = false;
 
+            template <typename Self, typename R>
+            static constexpr bool adaptor_invocable_from_this =
+                std::is_same_v<std::remove_cvref_t<Self>, partial> &&
+                __ranges::adaptor_invocable<__util::merge_cvref_t<Adaptor, Self>, R,
+                                            __util::merge_cvref_t<BoundedArgs, Self>...>;
+
             constexpr partial() noexcept
                 requires std::default_initializable<Adaptor>
                      && (std::default_initializable<BoundedArgs> && ...)
@@ -143,40 +150,14 @@ namespace gold::ranges {
 
             // Invoke Adaptor with arguments r, m_args_...
             // according to the value category of this partial object
-            template <typename R>
-                requires __ranges::adaptor_invocable<Adaptor&, R, BoundedArgs&...>
-            constexpr auto operator()(R&& r) & {
-                auto forwarder = [this, &r](auto&... args) {
-                    return m_adaptor_(std::forward<R>(r), args...);
+            template <typename Self, typename R>
+                requires adaptor_invocable_from_this<Self, R>
+            constexpr auto operator()(this Self&& self, R&& r) {
+                auto forwarder = [&self, &r](auto&... args) {
+                    return std::forward_like<Self>(self.m_adaptor_)(std::forward<R>(r),
+                                                                    std::forward_like<Self>(args)...);
                 };
-                return std::apply(forwarder, m_args_);
-            }
-
-            template <typename R>
-                requires __ranges::adaptor_invocable<const Adaptor&, R, const BoundedArgs&...>
-            constexpr auto operator()(R&& r) const& {
-                auto forwarder = [this, &r](const auto&... args) {
-                    return m_adaptor_(std::forward<R>(r), args...);
-                };
-                return std::apply(forwarder, m_args_);
-            }
-
-            template <typename R>
-                requires __ranges::adaptor_invocable<Adaptor, R, BoundedArgs...>
-            constexpr auto operator()(R&& r) && {
-                auto forwarder = [this, &r](auto&... args) {
-                    return std::move(m_adaptor_)(std::forward<R>(r), std::move(args)...);
-                };
-                return std::apply(forwarder, m_args_);
-            }
-
-            template <typename R>
-                requires __ranges::adaptor_invocable<const Adaptor, R, const BoundedArgs...>
-            constexpr auto operator()(R&& r) const&& {
-                auto forwarder = [this, &r](const auto&... args) {
-                    return std::move(m_adaptor_)(std::forward<R>(r), std::move(args)...);
-                };
-                return std::apply(forwarder, m_args_);
+                return std::apply(forwarder, self.m_args_);
             }
         };
 
@@ -192,6 +173,11 @@ namespace gold::ranges {
                      BoundedArgs...
                    >
                 && std::is_trivially_copyable_v<BoundedArgs...>;
+
+            template <typename Self, typename R>
+            static constexpr bool adaptor_invocable_from_this =
+                std::is_same_v<std::remove_cvref_t<Self>, partial> &&
+                __ranges::adaptor_invocable<Adaptor, R, __util::merge_cvref_t<BoundedArgs, Self>...>;
 
             constexpr partial() noexcept
                 requires (std::default_initializable<BoundedArgs> && ...)
@@ -214,40 +200,13 @@ namespace gold::ranges {
 
             // Invoke Adaptor with arguments r, m_args_...
             // according to the value category of this partial object
-            template <typename R>
-                requires __ranges::adaptor_invocable<Adaptor, R, BoundedArgs&...>
-            constexpr auto operator()(R&& r) & {
+            template <typename Self, typename R>
+                requires adaptor_invocable_from_this<Self, R>
+            constexpr auto operator()(this Self&& self, R&& r) {
                 auto forwarder = [&r](auto&... args) {
-                    return Adaptor{}(std::forward<R>(r), args...);
+                    return Adaptor{}(std::forward<R>(r), std::forward_like<Self>(args)...);
                 };
-                return std::apply(forwarder, m_args_);
-            }
-
-            template <typename R>
-                requires __ranges::adaptor_invocable<Adaptor, R, const BoundedArgs&...>
-            constexpr auto operator()(R&& r) const& {
-                auto forwarder = [&r](const auto&... args) {
-                    return Adaptor{}(std::forward<R>(r), args...);
-                };
-                return std::apply(forwarder, m_args_);
-            }
-
-            template <typename R>
-                requires __ranges::adaptor_invocable<Adaptor, R, BoundedArgs...>
-            constexpr auto operator()(R&& r) && {
-                auto forwarder = [&r](auto&... args) {
-                    return Adaptor{}(std::forward<R>(r), std::move(args)...);
-                };
-                return std::apply(forwarder, m_args_);
-            }
-
-            template <typename R>
-                requires __ranges::adaptor_invocable<Adaptor, R, const BoundedArgs...>
-            constexpr auto operator()(R&& r) const&& {
-                auto forwarder = [&r](const auto&... args) {
-                    return Adaptor{}(std::forward<R>(r), std::move(args)...);
-                };
-                return std::apply(forwarder, m_args_);
+                return std::apply(forwarder, self.m_args_);
             }
         };
 
@@ -264,6 +223,11 @@ namespace gold::ranges {
                    >
                 && std::is_trivially_copyable_v<BoundedArg>;
 
+            template <typename Self, typename R>
+            static constexpr bool adaptor_invocable_from_this =
+                std::is_same_v<std::remove_cvref_t<Self>, partial> &&
+                __ranges::adaptor_invocable<Adaptor, R, __util::merge_cvref_t<BoundedArg, Self>>;
+
             constexpr partial() noexcept requires std::default_initializable<BoundedArg> = default;
 
             constexpr partial(BoundedArg arg)
@@ -276,30 +240,11 @@ namespace gold::ranges {
                 return Adaptor{}(std::forward<R>(r), m_arg_);
             }
 
-            template <typename R>
-                requires __ranges::adaptor_invocable<Adaptor, R, BoundedArg&>
-            constexpr auto operator()(R&& r) & {
-                return Adaptor{}(std::forward<R>(r), m_arg_);
+            template <typename Self, typename R>
+                requires adaptor_invocable_from_this<Self, R>
+            constexpr auto operator()(this Self&& self, R&& r) {
+                return Adaptor{}(std::forward<R>(r), std::forward_like<Self>(self.m_arg_));
             }
-
-            template <typename R>
-                requires __ranges::adaptor_invocable<Adaptor, R, const BoundedArg&>
-            constexpr auto operator()(R&& r) const& {
-                return Adaptor{}(std::forward<R>(r), m_arg_);
-            }
-
-            template <typename R>
-                requires __ranges::adaptor_invocable<Adaptor, R, BoundedArg>
-            constexpr auto operator()(R&& r) && {
-                return Adaptor{}(std::forward<R>(r), std::move(m_arg_));
-            }
-
-            template <typename R>
-                requires __ranges::adaptor_invocable<Adaptor, R, const BoundedArg>
-            constexpr auto operator()(R&& r) const&& {
-                return Adaptor{}(std::forward<R>(r), std::move(m_arg_));
-            }
-
         };
 
         template <typename Adaptor, typename BoundedArg>
@@ -310,6 +255,12 @@ namespace gold::ranges {
 
             inline static constexpr bool _S_has_simple_call_op = false;
 
+            template <typename Self, typename R>
+            static constexpr bool adaptor_invocable_from_this =
+                std::is_same_v<std::remove_cvref_t<Self>, partial> &&
+                __ranges::adaptor_invocable<__util::merge_cvref_t<Adaptor, Self>, R,
+                                            __util::merge_cvref_t<BoundedArg, Self>>;
+
             constexpr partial() noexcept
                 requires std::default_initializable<Adaptor>
                       && std::default_initializable<BoundedArg>
@@ -318,30 +269,11 @@ namespace gold::ranges {
             constexpr partial(Adaptor adaptor, BoundedArg arg)
             : m_adaptor_(std::move(adaptor)), m_arg_(std::move(arg)) {}
 
-            template <typename R>
-                requires __ranges::adaptor_invocable<Adaptor&, R, BoundedArg&>
-            constexpr auto operator()(R&& r) & {
-                return m_adaptor_(std::forward<R>(r), m_arg_);
+            template <typename Self, typename R>
+                requires adaptor_invocable_from_this<Self, R>
+            constexpr auto operator()(this Self&& self, R&& r) {
+                return std::forward_like<Self>(self.m_adaptor_)(std::forward<r>(r), std::forward_like<Self>(self.m_arg_));
             }
-
-            template <typename R>
-                requires __ranges::adaptor_invocable<const Adaptor&, R, const BoundedArg&>
-            constexpr auto operator()(R&& r) const& {
-                return m_adaptor_(std::forward<R>(r), m_arg_);
-            }
-
-            template <typename R>
-                requires __ranges::adaptor_invocable<Adaptor, R, BoundedArg>
-            constexpr auto operator()(R&& r) && {
-                return std::move(m_adaptor_)(std::forward<R>(r), std::move(m_arg_));
-            }
-
-            template <typename R>
-                requires __ranges::adaptor_invocable<const Adaptor, R, const BoundedArg>
-            constexpr auto operator()(R&& r) const&& {
-                return std::move(m_adaptor_)(std::forward<R>(r), std::move(m_arg_));
-            }
-
         };
 
         /// ranges::__ranges::adaptor_partial_app_viable_impl
@@ -391,6 +323,11 @@ namespace gold::ranges {
         }();
         inline static constexpr bool has_simple_call_op = _S_has_simple_call_op;
 
+        template <typename Self, typename R>
+        static constexpr bool adaptor_invocable_from_this =
+            std::is_same_v<std::remove_cvref_t<Self>, range_adaptor_closure> &&
+            __ranges::adaptor_invocable<__util::merge_cvref_t<Closure, Self>, R>;
+
         constexpr range_adaptor_closure() requires std::default_initializable<Closure> = default;
 
         constexpr range_adaptor_closure(Closure closure)
@@ -407,28 +344,10 @@ namespace gold::ranges {
             return m_closure_(std::forward<R>(r));
         }
 
-        template <typename R>
-            requires __ranges::adaptor_invocable<Closure&, R>
-        constexpr auto operator()(R&& r) & {
-            return m_closure_(std::forward<R>(r));
-        }
-
-        template <typename R>
-            requires __ranges::adaptor_invocable<const Closure&, R>
-        constexpr auto operator()(R&& r) const& {
-            return m_closure_(std::forward<R>(r));
-        }
-
-        template <typename R>
-            requires __ranges::adaptor_invocable<Closure, R>
-        constexpr auto operator()(R&& r) && {
-            return std::move(m_closure_)(std::forward<R>(r));
-        }
-
-        template <typename R>
-            requires __ranges::adaptor_invocable<const Closure, R>
-        constexpr auto operator()(R&& r) const&& {
-            return std::move(m_closure_)(std::forward<R>(r));
+        template <typename Self, typename R>
+            requires adaptor_invocable_from_this<Self, R>
+        constexpr auto operator()(this Self&& self, R&& r) {
+            return std::forward_like<Self>(self.m_closure_)(std::forward<R>(r));
         }
     };
 
@@ -445,7 +364,7 @@ namespace gold::ranges {
 
         template <typename R>
             requires __ranges::adaptor_invocable<Closure, R>
-        constexpr auto operator()(R&& r) const {
+        static constexpr auto operator()(R&& r) {
             return Closure{}(std::forward<R>(r));
         }
     };
