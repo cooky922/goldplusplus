@@ -2,57 +2,57 @@
 Official Directory
 
 # To-Do:
-## `[gold.types.basic]`
-+ `gold::simple_function_ptr`
-+ `gold::simple_function_ref`
 
+## `[gold++.ranges]`
+* add concept: `gold::ranges::nested_range`
+* add concept: `gold::ranges::statically_sized_range`
+* add algorithm: `gold::ranges::shift_left` and `gold::ranges::shift_right`
+
+## `[gold++.text.format]`
+* add thousand separator support for integers without using locales
+
+example:
 ```c++
-namespace gold {
-
-  /// simple_function_ptr
-  template <typename T>
-    requires std::is_function_v<T>
-  using simple_function_ptr = T*;
-  
-  /// simple_function_ref
-  template <typename T>
-    requires std::is_function_v<T>
-  using simple_function_ref = T&;
-
-} // namespace gold
+gold::format("{}", 1234567) == "1234567"
+gold::format("{:~,}", 1234567) == "1,234,567"
+gold::format("{:~ }", 1234567) == "1 234 567"
 ```
 
-## `[gold.functional.functions]`
-+ `gold::function` - `constexpr`-compatible `std::function`
-+ `gold::unique_function` - `constexpr`-compatible `std::move_only_function`
+## `[gold++.utility.stacktrace]`
+* add new static member function: `gold::stacktrace::from_current_exception`
 
+## `[gold++.utility.fiber_context]`
+* add type: `gold::fiber_context`
+
+synopsis:
 ```c++
 namespace gold {
- 
-  /// function
-  template <typename...>
-  class function;
-  
-  template <typename R, typename... Args>
-  class function<R(Args...) /* cv */ /* ref */ noexcept(/* is-noexcept */)>;
-  
-  template <typename R, typename... Args>
-  class function<R(Args......) /* cv */ /* ref */ noexcept(/* is-noexcept */)>;
-  
-  /// unique_function
-  template <typename...>
-  class unique_function;
-  
-  template <typename R, typename... Args>
-  class unique_function<R(Args...) /* cv */ /* ref */ noexcept(/* is-noexcept */)>;
-  
-  template <typename R, typename... Args>
-  class unique_function<R(Args......) /* cv */ /* ref */ noexcept(/* is-noexcept */)>;
+  /// fiber_context
+  class fiber_context {
+    /// constructors and assignment
+    constexpr fiber_context() = default;
 
-} // namespace gold
+    fiber_context(fiber_context&&);
+
+    template <typename F>
+    fiber_context(F&&);
+
+    fiber_context& operator=(fiber_context&&);
+
+    ~fiber_context();
+
+    /// modifiers
+    void swap(fiber_context&) noexcept;
+
+    /// context switch
+    fiber_context resume() &&;
+    template <typename F>
+    fiber_context resume_with(F&&) &&;
+  };
+}
 ```
 
-## `[gold.types.concepts]`
+## `[gold++.types.concepts]`
 
 ```c++
 namespace gold {
@@ -68,229 +68,25 @@ namespace gold {
 } // namespace gold
 ```
 
-## `[gold.format]`
-Revamp Text Formatting
-
-+ `gold::format_write_context`
-+ `gold::format_parse_context`
-
-## `[gold.functional]`
+## `[gold++.functional]`
 + `gold::curry`
 + `gold::uncurry`
-+ `gold::compose`
 + `gold::make_pipeable`
 + `gold::bind_at`
 
-## `[gold.smart_ptrs]`
-+ `gold::stationary_ptr`
-+ `gold::unique_ptr`
-+ `gold::shared_ptr` (unsynchronized version for compile-time support)
-+ `gold::cloned_ptr`
-+ `gold::borrowed_ptr`
-+ `gold::out_ptr[_t]`
-+ `gold::inout_ptr[_t]`
+## `[gold++.coroutines]`
 
-```c++
-namespace gold {
-
-  /// bad_pointer_access
-  class bad_pointer_access;
-
-  /// default_deleter
-  template <typename>
-  class default_deleter;
-  
-  template <typename T>
-  class default_deleter<T[]>;
-  
-  /// default_cloner
-  template <typename>
-  class default_cloner;
-  
-  template <typename T>
-  class default_cloner<T[]>;
-  
-  /// stationary_ptr
-  template <typename T, typename D = default_deleter<T>>
-  class stationary_ptr;
-  
-  template <typename T, typename D>
-  class stationary_ptr<T[], D>;
-  
-  /// unique_ptr
-  template <typename T, typename D = default_deleter<T>>
-  class unique_ptr;
-  
-  template <typename T, typename D>
-  class unique_ptr<T[], D>;
-  
-  /// shared_ptr
-  template <typename T>
-  class shared_ptr;
-  
-  template <typename T>
-  class shared_ptr<T[]>;
-  
-  /// cloned_ptr
-  template <typename T, typename C = default_cloner<T>, typename D = default_deleter<T>>
-  class cloned_ptr;
-  
-  template <typename T, typename C, typename D>
-  class cloned_ptr<T[], C, D>;
-  
-  /// make_stationary_ptr
-  template <typename T, typename... Args>
-  constexpr stationary_ptr<T> make_stationary_ptr(Args&&...);
-  
-  /// make_stationary_ptr_for_overwrite
-  template <typename T, typename... Args>
-  constexpr stationary_ptr<T> make_stationary_ptr_for_overwrite() noexcept;
-  
-  /// allocate_stationary_ptr
-  template <typename T, typename Alloc, typename... Args>
-  constexpr auto allocate_stationary_ptr(Alloc&, Args&&...);
-  
-  /// make_unique_ptr
-  template <typename T, typename... Args>
-  constexpr unique_ptr<T> make_unique_ptr(Args&&...);
-  
-  /// make_unique_ptr_for_overwrite
-  template <typename T>
-  constexpr unique_ptr<T> make_unique_ptr_for_overwrite() noexcept;
-  
-  /// allocate_unique_ptr
-  template <typename T, typename Alloc, typename... Args>
-  constexpr unique_ptr<T> allocate_unique_ptr(Alloc&, Args&&...);
-  
-  /// make_shared_ptr
-  template <typename T, typename... Args>
-  constexpr shared_ptr<T> make_shared_ptr(Args&&...);
-  
-  /// make_shared_ptr_for_overwrite
-  template <typename T>
-  constexpr shared_ptr<T> make_shared_ptr_for_overwrite() noexcept;
-  
-  /// allocate_shared_ptr
-  template <typename T, typename Alloc, typename... Args>
-  constexpr shared_ptr<T> allocate_shared_ptr(Alloc&, Args&&...);
-  
-  /// make_cloned_ptr
-  template <typename T, typename... Args>
-  constexpr cloned_ptr<T> make_cloned_ptr(Args&&...);
-  
-  /// make_cloned_ptr_for_overwrite
-  template <typename T>
-  constexpr cloned_ptr<T> make_cloned_ptr_for_overwrite() noexcept;
-  
-  /// allocate_cloned_ptr
-  template <typename T, typename Alloc, typename... Args>
-  constexpr cloned_ptr<T> allocate_cloned_ptr(Alloc&, Args&&...);
-
-} // namespace gold
-```
-
-## `[gold.types.movable_tuple]`
-+ `gold::movable_tuple` - implemented using lambda expressions
-
-## `[gold.type.tuples]`
-+ `gold::tuples::get_like`
-+ `gold::tuples::size`
-+ `gold::tuples::apply_each_n`
-+ `gold::tuples::zip`
-+ `gold::tuples::unzip`
-+ `gold::tuples::concat`
-+ `gold::tuples::fold_left`
-+ `gold::tuples::fold_right`
-+ `gold::tuples::fold_left_first`
-+ `gold::tuples::fold_right_last`
-
-```c++
-
-namespace gold::tuples {
-
-  inline namespace /* unspecified */ {
-    // get_like
-    template <std::size_t>
-    inline constexpr /* unspecified */ get_like = /* unspecified */;
-  }
-  
-  inline namespace /* unspecified */ {
-    // apply_each_n
-    template <std::size_t>
-    inline constexpr /* unspecified */ apply_each_n = /* unspecified */;
-  }
-  
-  inline namespace /* unspecified */ {
-    // zip
-    inline constexpr /* unspecified */ zip = /* unspecified */;
-  }
-  
-  inline namespace /* unspecified */ {
-    // unzip
-    inline constexpr /* unspecified */ unzip = /* unspecified */;
-  }
-  
-  inline namespace /* unspecified */ {
-    // fold_left
-    inline constexpr /* unspecified */ fold_left = /* unspecified */;
-  }
-  
-  inline namespace /* unspecified */ {
-    // fold_right
-    inline constexpr /* unspecified */ fold_right = /* unspecified */;
-  }
-  
-  inline namespace /* unspecified */ {
-    // fold_left_first
-    inline constexpr /* unspecified */ fold_left_first = /* unspecified */;
-  }
-  
-  inline namespace /* unspecified */ {
-    // fold_right_last
-    inline constexpr /* unspecified */ fold_right_last = /* unspecified */;
-  }
-
-} // namespace gold::tuples
-```
-
-## `[gold.coroutines]`
-
-### `[gold.coroutines.generator]`
+### `[gold++.coroutines.generator]`
 + `gold::invocable_generator`
 + `gold::state_generator`
 + `gold::io_generator`
 
-### `[gold.coroutines.task]`
+### `[gold++.coroutines.task]`
 + revamp `gold::task`
 
-## `[gold.containers]`
-+ `gold::mdspan`
+## `[gold++.preview.io]`
 
-## `[gold.numeric]`
-+ `gold::basic_number` and `gold::number`
-+ `gold::math::vector` and `gold::math::matrix`
-+ `gold::fraction`
-+ `gold::to_unsafe_bytes`
-+ `gold::basic_int_2x` and `gold::basic_uint_2x`
-+ `gold::basic_int_nx` and `gold::basic_uint_nx`
-+ `gold::float_parts`
-
-## `[gold.ranges]`
-+ `gold::views::adjacent`
-+ `gold::views::adjacent_transform`
-+ `gold::views::cycle`
-+ `gold::views::concat`
-+ `gold::views::cartesian_product`
-
-## `[gold.preview.lazy_ranges]`
-+ `gold::lazy_ranges::cartesian_product`
-+ `gold::lazy_ranges::zip`
-+ `gold::lazy_ranges::offset`
-+ `gold::lazy_ranges::continue_with`
-
-## `[gold.preview.io]`
-
-### `[gold.preview.io.file]`
+### `[gold++.preview.io.file]`
 ```c++
 namespace gold::io {
 
@@ -336,7 +132,7 @@ namespace gold::io {
 } // namespace gold::io
 ```
 
-### `[gold.preview.io.stream]`
+### `[gold++.preview.io.stream]`
 ```c++
 namespace gold::io {
 
@@ -390,7 +186,7 @@ namespace gold::io {
 } // namespace gold::io
 ```
 
-### `[gold.preview.io.fs]`
+### `[gold++.preview.io.fs]`
 ```c++
 namespace gold::io::fs {
 
@@ -443,8 +239,8 @@ namespace gold::io::fs {
 namespace gold { namespace fs = namespace io::fs; }
 ```
 
-## `[gold.preview.concurrent]`
-### `[gold.preview.concurrent.thread]`
+## `[gold++.preview.concurrent]`
+### `[gold++.preview.concurrent.thread]`
 ```c++
 namespace gold {
   
@@ -518,7 +314,7 @@ namespace gold {
 }
 ```
 
-### `[gold.preview.concurrent.sync]`
+### `[gold++.preview.concurrent.sync]`
 ```c++
 namespace gold {
 
@@ -533,12 +329,12 @@ namespace gold {
 } // namespace gold
 ```
 
-## `[gold.preview.data]`
+## `[gold++.preview.data]`
 + `gold::image`
 + `gold::bitmap`
 + `gold::audio`
 
-## `[gold.preview.system]`
+## `[gold++.preview.system]`
 + `gold::sys::shell`
 + `gold::sys::process`
 + `gold::sys::power_status`
@@ -547,7 +343,7 @@ namespace gold {
 + `gold::sys::os_info`
 + `gold::sys::regkey`
 
-## `[gold.preview.apps]`
+## `[gold++.preview.apps]`
 + `gold::app`
 + `gold::window_base`
 + `gold::default_window`
@@ -587,7 +383,7 @@ namespace gold {
 
 } // namespace gold
 ```
-## `[gold.preview.canvas]`
+## `[gold++.preview.canvas]`
 + `gold::canvas::color`
 + `gold::canvas::color_hex`
 + `gold::canvas::color_rgb`
@@ -654,7 +450,7 @@ namespace gold::canvas {
 } // namespace gold::canvas
 ```
 
-## `[gold.preview.graphics]`
+## `[gold++.preview.graphics]`
 + `gold::graphics`
 + `gold::canvas_context`
 + `gold::canvas_stream`
