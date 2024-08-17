@@ -257,7 +257,7 @@ namespace gold::ranges {
     };
 
     template <typename R, typename Bound = std::unreachable_sentinel_t>
-    cycle_view(R&&, Bound&& = {}) -> cycle_view<std::views::all_t<R>, Bound>;
+    cycle_view(R&&, Bound = {}) -> cycle_view<std::views::all_t<R>, Bound>;
 
     namespace views {
 
