@@ -1,0 +1,71 @@
+// <gold/invocable_traits> - gold++ library
+
+// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_INVOCABLE_TRAITS
+#define __GOLD_INVOCABLE_TRAITS
+
+#include <gold/bits/type_traits/invoke_traits.hpp>
+
+namespace gold {
+
+    /// is_noexcept_v
+    /// is_noexcept
+    /// remove_noexcept_t
+    /// remove_noexcept
+    /// add_noexcept_t
+    /// add_noexcept
+    /// has_lvalue_reference_qualifier_v
+    /// has_lvalue_reference_qualifier
+    /// has_rvalue_reference_qualifier_v
+    /// has_rvalue_reference_qualifier
+    /// has_reference_qualifier_v
+    /// has_reference_qualifier
+    /// remove_reference_qualifier_t
+    /// remove_reference_qualifier
+    /// add_lvalue_reference_qualifier_t
+    /// add_lvalue_reference_qualifier
+    /// add_rvalue_reference_qualifier_t
+    /// add_rvalue_reference_qualifier
+    /// has_const_qualifier_v
+    /// has_const_qualifier
+    /// has_volatile_qualifier_v
+    /// has_volatile_qualifier
+    /// has_cv_qualifier_v
+    /// has_cv_qualifier
+    /// has_cvref_qualifier_v
+    /// has_cvref_qualifier
+    /// has_cvref_qualifier_or_noexcept_v
+    /// has_cvref_qualifier_or_noexcept
+    /// remove_const_qualifier_t
+    /// remove_const_qualifier
+    /// remove_volatile_qualifier_t
+    /// remove_volatile_qualifier
+    /// remove_cv_qualifier_t
+    /// remove_cv_qualifier
+    /// remove_cvref_qualifier_t
+    /// remove_cvref_qualifier
+    /// remove_cvref_qualifier_noexcept_t
+    /// remove_cvref_qualifier_noexcept
+    /// add_const_qualifier_t
+    /// add_const_qualifier
+    /// add_volatile_qualifier_t
+    /// add_volatile_qualifier
+    /// add_cv_qualifier_t
+    /// add_cv_qualifier
+    /// has_va_args_v
+    /// has_va_args
+    /// va_args_tag_t
+    /// va_args_tag
+
+    /// invoke_arity_v
+    /// invoke_arity
+    /// invoke_return_t
+    /// invoke_return
+    /// invoke_parameter_t
+    /// invoke_parameter
+
+} // namespace gold
+
+#endif // __GOLD_INVOCABLE_TRAITS

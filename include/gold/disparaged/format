@@ -1,0 +1,72 @@
+// <gold/format> - gold++ library
+
+// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_FORMAT
+#define __GOLD_FORMAT
+
+//// example:
+/// gold::format("${}", 1234) == "1234"
+/// gold::format("${0}, ${1}!", "Hello", "world") == "Hello, world!"
+/// gold::format("${0}${1}${0}", "abra", "cad") == "abracadabra"
+/// gold::format("$$$$${:s}$$$$", "Dollar") == "$$Dollar$$"
+/// gold::format("${:#x}", 0xdeadbeef) == "0xdeadbeef"
+/// gold::format("${:.2f}", 3.14f) == "3.14"
+/// gold::format("Wh${}? ${} this madness?", 'y', "Is") == "Why? Is this madness?"
+/// gold::format("${::^5}", 'A') == "::A::"
+/// gold::format("${0:.${1}f}", 3.1415926535, 2) == "3.14"
+/// gold::format("${:|^#${1}x}", 0xdeadbeef, 30) == "||||||||||0xdeadbeef||||||||||"
+
+//// missing and caveats:
+/// - no sign specs for floating points
+/// - no 'zero' padding specs
+/// - formatter class replacement
+/// - revamp 'format_specs'
+/// - nonvigilant error reporting
+/// - unstable argument format indexing
+
+//// fixed and implemented:
+/// - no width and alignment specs, now implemented
+/// - unstable 'formatted_size', now stable
+/// - no dynamic arg-id for precision and width, now implemented
+/// - no custom specs, now available
+/// - unstable floating point conversion to string, now partially implemented
+
+//// future developments:
+/// - 'format_parse_context'
+/// - 'format_context'
+/// - precise argument indexing
+/// - better error reporting (both compile and run-time)
+
+//// intend to not be added:
+/// - encoding
+/// - other character type (ex. wide character)
+/// - locale specific
+
+//// available entities:
+/// format_specs
+/// format_error
+/// format_args
+/// formatter
+/// formattable
+/// formattable_to
+/// custom_formattable
+/// custom_formattable_to
+/// vformat_to
+/// format_to
+/// vformat
+/// format
+/// formatted_size
+/// format_to_c
+/// format_to_n_result
+/// format_to_n
+
+#include <gold/bits/format/fmt_error.hpp>
+#include <gold/bits/format/fmt_specs.hpp>
+#include <gold/bits/format/fmt_parse.hpp>
+#include <gold/bits/format/formatter.hpp>
+#include <gold/bits/format/fmt_args.hpp>
+#include <gold/bits/format/fmt_functions.hpp>
+
+#endif // __GOLD_FORMAT

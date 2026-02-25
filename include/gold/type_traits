@@ -1,0 +1,74 @@
+// <gold/type_traits> - gold++ library
+
+// Copyright (C) [ 2021 - 2025 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_TYPE_TRAITS
+#define __GOLD_TYPE_TRAITS
+
+#include <gold/bits/type_traits/constant.hpp>
+#include <gold/bits/type_traits/helper_class.hpp>
+#include <gold/bits/type_traits/type_classification.hpp>
+#include <gold/bits/type_traits/type_properties.hpp>
+#include <gold/bits/type_traits/type_relationships.hpp>
+#include <gold/bits/type_traits/template_instantiation.hpp>
+#include <gold/bits/type_traits/specialization_of.hpp>
+#include <gold/bits/type_traits/type_transformations.hpp>
+#include <gold/bits/type_traits/base_traits.hpp>
+#include <gold/bits/type_traits/detection.hpp>
+
+namespace gold {
+
+    //// Helper Utilities
+    /// types_inherited
+    /// size_constant[_v]
+    /// index_constant[_v]
+    /// always_true
+    /// always_false
+
+    //// Type Classification
+    /// is_character_type[_v]
+    /// is_ordering_type[_v]
+    /// is_scalar_numeric_type[_v]
+
+    //// Type Properties
+    /// is_complete_type[_v]
+    /// is_structural_type[_v]
+    /// pointer_rank[_v]
+
+    //// Type Relationships
+    /// is_not_same[_v]
+    /// are_same[_v]
+    /// are_not_same[_v]
+    /// is_any_of[_v]
+    /// is_narrowing_convertible[_v]
+
+    //// Derive-Base Type Traits
+    /// bases[_t]
+    /// direct_bases[_t]
+    /// has_bases[_v]
+    /// is_direct_base_of[_v]
+    /// is_indirect_base_of[_v]
+
+    //// Template Instantiation
+    /// is_template_instantiation[_v]
+
+    //// Template Specialiation
+    /// is_specialization_of_v ()
+
+    //// Type Transformation
+    /// conditionals[_t]
+    /// type_apply[_t]
+    /// type_apply_if[_t]
+    /// disable_if[_t]
+
+    //// Detection Utilites
+    /// is_detected[_v]
+    /// detected_t
+    /// detected_or[_t]
+    /// is_detected_exact[_v]
+    /// is_detected_convertible[_v]
+
+} // namespace gold
+
+#endif // __GOLD_TYPE_TRAITS

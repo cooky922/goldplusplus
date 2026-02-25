@@ -1,0 +1,165 @@
+// <gold/fiber_context> - gold++ library
+
+// Copyright (C) [ 2025 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_FIBER_CONTEXT
+#define __GOLD_FIBER_CONTEXT
+
+#include <utility>
+#include <stdexcept>
+
+/// API usage on gold::fiber_context
+// - must have at least one gold::fiber_scope for each thread
+//   to construct gold::fiber_context
+// - the execution within the created fiber
+//   must not throw or else it would call 'std::terminate()'
+// - example:
+// ```
+// gold::fiber_scope scope;
+// gold::fiber_context f1 (...);
+// ```
+
+namespace gold {
+
+    /// fiber_context
+    class fiber_context;
+
+    /// fiber_scope
+    class fiber_scope;
+
+    /// fiber_context_error
+    class fiber_error : public std::runtime_error {
+      public:
+        fiber_error(const char* s) : std::runtime_error(s) {}
+    };
+
+    namespace __fibers {
+
+        extern fiber_context accept_transfer_impl();
+        [[noreturn]] extern void __stdcall fiber_proc_impl(void*);
+
+
+        struct fiber_entry {
+            virtual fiber_context run(fiber_context&&) = 0;
+            virtual ~fiber_entry() = default;
+        };
+
+        template <typename F>
+        struct fiber_entry_impl : fiber_entry {
+            F fn;
+            fiber_entry_impl(F&& f) : fn(std::move(f)) {}
+            fiber_context run(fiber_context&&) override;
+        };
+
+        struct fiber_data {
+            fiber_entry* entry = nullptr;
+            bool main_p = false;
+            bool done_p = false;
+
+            ~fiber_data() {
+                if (entry)
+                    delete entry;
+            }
+        };
+
+    } // namespace __fibers
+
+    class fiber_scope {
+      private:
+        bool m_did_convert = false;
+        __fibers::fiber_data m_main_data;
+
+      public:
+        fiber_scope();
+        ~fiber_scope();
+
+        fiber_scope(const fiber_scope&) = delete;
+        fiber_scope& operator=(const fiber_scope&) = delete;
+
+        void release() & { m_did_convert = false; }
+    };
+
+    class fiber_context {
+      public:
+        using native_handle_type = void*;
+
+      private:
+        native_handle_type m_handle = nullptr;
+        __fibers::fiber_data* m_data = nullptr;
+
+        static bool sf_is_current_thread_a_fiber_impl_();
+        void mf_maybe_clear_impl_();
+        void mf_create_impl_(__fibers::fiber_entry*);
+        fiber_context mf_resume_impl_(fiber_context (*) (void*, fiber_context&&), void*) &&;
+
+        friend fiber_context __fibers::accept_transfer_impl();
+        friend void __fibers::fiber_proc_impl(void*);
+
+    public:
+        constexpr fiber_context() noexcept = default;
+
+        template <typename F>
+        explicit fiber_context(F&& entry) {
+            if (!sf_is_current_thread_a_fiber_impl_())
+                throw fiber_error("user didn't create 'gold::fiber_scope' before constructing 'gold::fiber_context'");
+            mf_create_impl_(new __fibers::fiber_entry_impl<std::decay_t<F>>(std::forward<F>(entry)));
+        }
+
+        constexpr fiber_context(fiber_context&& other) noexcept
+        : m_handle(std::exchange(other.m_handle, nullptr)),
+          m_data(std::exchange(other.m_data, nullptr)) {}
+
+        fiber_context& operator=(fiber_context&& other) noexcept {
+            if (this != &other) {
+                mf_maybe_clear_impl_();
+                m_handle = std::exchange(other.m_handle, nullptr);
+                m_data   = std::exchange(other.m_data, nullptr);
+            }
+            return *this;
+        }
+
+        fiber_context(const fiber_context&) = delete;
+        fiber_context& operator=(const fiber_context&) = delete;
+
+        ~fiber_context() { mf_maybe_clear_impl_(); }
+
+        // --- Resume Operations ---
+        fiber_context resume(this fiber_context&& self) {
+            return std::move(self).mf_resume_impl_(nullptr, nullptr);
+        }
+
+        template <typename Fn>
+        fiber_context resume_with(this fiber_context&& self, Fn&& fn) {
+            auto hook_lambda = [](void* payload, fiber_context&& prev) -> fiber_context {
+                auto& func = *static_cast<std::remove_reference_t<Fn>*>(payload);
+                return func(std::move(prev));
+            };
+            return std::move(self).mf_resume_impl_(+hook_lambda, &fn);
+        }
+
+        constexpr bool can_resume() const noexcept { return m_handle != nullptr && (m_data == nullptr || !m_data->done_p); }
+        constexpr explicit operator bool() const noexcept { return can_resume(); }
+        constexpr bool empty() const noexcept { return m_handle == nullptr; }
+
+        constexpr void swap(fiber_context& other) noexcept {
+            std::swap(m_handle, other.m_handle);
+            std::swap(m_data, other.m_data);
+        }
+    };
+
+    constexpr void swap(fiber_context& a, fiber_context& b) noexcept { a.swap(b); }
+
+    namespace __fibers {
+
+        template <typename F>
+        fiber_context fiber_entry_impl<F>::run(fiber_context&& ctx) {
+            return fn(std::move(ctx));
+        }
+
+    } // namespace __fibers
+
+} // namespace gold
+
+#endif // __GOLD_FIBER_CONTEXT
+

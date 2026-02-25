@@ -1,0 +1,11 @@
+// <gold/generator> - gold++ library
+
+// Copyright (C) [ 2021 - 2024 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_GENERATOR
+#define __GOLD_GENERATOR
+
+#include <gold/bits/coroutine/generator.hpp>
+
+#endif // __GOLD_GENERATOR

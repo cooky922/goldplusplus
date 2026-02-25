@@ -1,0 +1,30 @@
+// <gold/coroutine> - gold++ library
+
+// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_COROUTINE
+#define __GOLD_COROUTINE
+
+#include <gold/bits/coroutine/coro_base.hpp>
+#include <gold/bits/coroutine/awaitable.hpp>
+
+namespace gold {
+
+    /// always_suspend   [ defined in <gold/bits/coroutine/coro_base.hpp> ]
+    /// never_suspend    [ defined in <gold/bits/coroutine/coro_base.hpp> ]
+    /// suspend_if       [ defined in <gold/bits/coroutine/coro_base.hpp> ]
+    /// suspend_maybe    [ defined in <gold/bits/coroutine/coro_base.hpp> ]
+    /// coroutine_error  [ defined in <gold/bits/coroutine/coro_base.hpp> ]
+
+    /// simple_awaitable [ defined in <gold/bits/coroutine/awaitable.hpp> ]
+    /// awaitable        [ defined in <gold/bits/coroutine/awaitable.hpp> ]
+
+    //// TODO:
+    /// do not coincide with <gold/bits/coroutine/coro_traits.hpp>
+    /// replace <gold/generator> implementation with new
+    /// new <gold/lazy>
+
+} // namespace gold
+
+#endif // __GOLD_COROUTINE

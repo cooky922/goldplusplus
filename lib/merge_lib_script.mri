@@ -1,0 +1,10 @@
+create libgold++.a
+addlib libgold++_core.a
+addlib external_dep\libstdc++_libbacktrace.a
+addlib external_dep\libdl.a
+addlib external_dep\libdbghelp.a
+addlib external_dep\libimagehlp.a
+save
+end
+
+; if won't work, just type in manual instead

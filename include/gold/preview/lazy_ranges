@@ -1,0 +1,120 @@
+// <gold/preview/lazy_ranges> - gold++ library
+
+// Copyright (C) 2021 - present Desmond Gold
+
+// note: this is only a prototype
+
+#pragma once
+#ifndef __GOLD_PREVIEW_LAZY_RANGES
+#define __GOLD_PREVIEW_LAZY_RANGES
+
+#include <gold/bits/coroutine/coro_generator.hpp>
+#include <gold/random>
+
+namespace gold::preview {
+
+    namespace lazy_ranges {
+
+        //// Factories
+        /// iota_view
+        /// iota_fn
+        /// iota
+
+        /// ranged_view
+        /// ranged_fn
+        /// ranged
+
+        /// repeat_view
+        /// repeat_fn
+        /// repeat
+
+        /// repeat_n_view
+        /// repeat_n_fn
+        /// repeat_n
+
+        /// random_ints_view
+        /// random_ints_fn
+        /// random_ints
+
+        /// random_reals_view
+        /// random_reals_fn
+        /// random_reals
+
+        //// Views
+        /// take_view
+        /// take_fn
+        /// take
+
+        /// take_ref_view
+        /// take_ref_fn
+        /// take_ref
+
+        /// take_while_view
+        /// take_while_fn
+        /// take_while
+
+        /// take_while_ref_view
+        /// take_while_ref_fn
+        /// take_while_ref
+
+        /// drop_view
+        /// drop_fn
+        /// drop
+
+        /// drop_ref_view
+        /// drop_ref_fn
+        /// drop_ref
+
+        /// drop_while_view
+        /// drop_while_fn
+        /// drop_while
+
+        /// drop_while_ref_view
+        /// drop_while_ref_fn
+        /// drop_while_ref
+
+        /// stride_view
+        /// stride_fn
+        /// stride
+
+        /// stride_ref_view
+        /// stride_ref_fn
+        /// stride_ref
+
+        /// intersperse_view
+        /// intersperse_fn
+        /// intersperse
+
+        /// intersperse_ref_view
+        /// intersperse_ref_fn
+        /// intersperse_ref
+
+        /// transform_view
+        /// transform_fn
+        /// transform
+
+        /// transform_ref_view
+        /// transform_ref_fn
+        /// transform_ref
+
+        /// filter_view
+        /// filter_fn
+        /// filter
+
+        /// filter_ref_view
+        /// filter_ref_fn
+        /// filter_ref
+
+        /// enumerate_view
+        /// enumerate_fn
+        /// enumerate
+
+        /// enumerate_ref_view
+        /// enumerate_ref_fn
+        /// enumerate_ref
+
+    }
+
+} // namespace gold::preview
+
+#endif // __GOLD_PREVIEW_LAZY_RANGES

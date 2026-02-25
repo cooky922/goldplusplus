@@ -1,0 +1,958 @@
+// <gold/unicode> - gold++ library
+
+// Copyright (C) [ 2021 - 2025 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_UNICODE
+#define __GOLD_UNICODE
+
+#include <string_view>
+#include <string>
+#include <bits/ranges_util.h>
+#include <gold/ascii>
+#include <gold/basic_types>
+#include <gold/bits/ranges/view_util.hpp>
+#include <gold/bits/ranges/range_adaptor.hpp>
+
+namespace gold::uc {
+
+    //// UTF Transcoding
+    /// transcoding_error
+    enum class transcoding_error : gold::uint8_t {
+        none = 0,
+        truncated_utf8_sequence = 0b1,
+        unpaired_high_surrogate = 0b10,
+        unpaired_low_surrogate  = 0b11,
+        unexpected_utf8_continuation_byte = 0b100,
+        overlong = 0b101,
+        encoded_surrogate = 0b110,
+        out_of_range = 0b111,
+        invalid_utf8_leading_byte = 0b1000
+    };
+
+    /// transcoding_state
+    struct transcoding_state {
+        uc::transcoding_error err {};
+
+        using enum transcoding_error;
+
+        constexpr explicit operator bool() const noexcept {
+            return err == uc::transcoding_error::none;
+        }
+
+        constexpr bool has_error() const noexcept {
+            return err != uc::transcoding_error::none;
+        }
+    };
+
+    namespace __uc {
+
+        /// __uc::format
+        enum class format : gold::uint8_t {
+            utf8,
+            utf16,
+            utf32,
+            unknown
+        };
+
+        /// __uc::to_format
+        template <typename CharT>
+        consteval __uc::format to_format() {
+            if constexpr (__is_same(CharT, char8_t)
+                       || __is_same(CharT, char) && sizeof(char) == sizeof(char8_t)) // assuming 'char' uses UTF-8
+                return __uc::format::utf8;
+            else if constexpr (__is_same(CharT, char16_t)
+                            || __is_same(CharT, wchar_t) && sizeof(wchar_t) == sizeof(char16_t))
+                return __uc::format::utf16;
+            else if constexpr (__is_same(CharT, char32_t)
+                            || __is_same(CharT, wchar_t) && sizeof(wchar_t) == sizeof(char32_t))
+                return __uc::format::utf32;
+            else
+                return __uc::format::unknown;
+        }
+
+        template <std::ranges::input_range R>
+        consteval __uc::format to_format() {
+            return __uc::to_format<std::ranges::range_value_t<R>>();
+        }
+
+        /// __uc::code_unit_to_type
+        template <typename CharT>
+        concept code_unit_to_type =
+            std::same_as<CharT, char8_t>  ||
+            std::same_as<CharT, char16_t> ||
+            std::same_as<CharT, char32_t>;
+
+        /// __uc::code_unit_from_type
+        template <typename CharT>
+        concept code_unit_from_type =
+            std::same_as<CharT, char>    ||
+            std::same_as<CharT, wchar_t> ||
+            __uc::code_unit_to_type<CharT>;
+
+        /// __uc::at_most_bidirectional
+        template <typename Iter>
+        consteval auto at_most_bidirectional() {
+            if constexpr (std::bidirectional_iterator<Iter>)
+                return std::bidirectional_iterator_tag();
+            else if constexpr (std::forward_iterator<Iter>)
+                return std::forward_iterator_tag();
+            else
+                return std::input_iterator_tag();
+        }
+
+        /// __uc::utf_range
+        template <typename R>
+        concept utf_range =
+            std::ranges::input_range<R> &&
+            __uc::code_unit_from_type<std::ranges::range_value_t<R>>;
+
+        /// __uc::from_utf_view
+        template <typename R>
+        concept from_utf_view =
+            __uc::utf_range<R> && std::ranges::view<R>;
+
+        /// __uc::replacement_character (Default Replacement Character)
+        inline constexpr char32_t replacement_character = 0xFFFD;
+
+        /// __uc::decode_one_result
+        struct decode_one_result {
+            char32_t code_point;
+            transcoding_error err;
+            gold::uint8_t units_to_increase;
+        };
+
+        /// __uc::is_code_point
+        // check if it is a valid code point value
+        constexpr bool is_code_point(char32_t c) noexcept {
+            return c <= 0x10FFFF;
+        }
+
+        /// __uc::is_high_surrogate
+        constexpr bool is_high_surrogate(char32_t c) noexcept {
+            return c >= 0xD800 && c <= 0xDBFF;
+        }
+
+        /// __uc::is_low_surrogate
+        constexpr bool is_low_surrogate(char32_t c) noexcept {
+            return c >= 0xDC00 && c <= 0xDFFF;
+        }
+
+        /// __uc::is_surrogate
+        constexpr bool is_surrogate(char32_t c) noexcept {
+            return is_high_surrogate(c) || is_low_surrogate(c);
+        }
+
+        /// __uc::is_scalar_value
+        // a non-scalar code point value is a surrogate value
+        constexpr bool is_scalar_value(char32_t c) noexcept {
+            return is_code_point(c) && !is_surrogate(c);
+        }
+
+        /// __uc::utf_iterator
+        template <__uc::code_unit_from_type FromCodeUnit,
+                  __uc::code_unit_to_type   ToCodeUnit,
+                  std::input_iterator       Iter,
+                  std::sentinel_for<Iter>   Sent = Iter>
+            requires std::convertible_to<std::iter_value_t<Iter>, FromCodeUnit>
+        class utf_iterator {
+          public:
+            using value_type = std::remove_cv_t<ToCodeUnit>;
+            using difference_type = std::iter_difference_t<Iter>;
+            using reference = value_type;
+            using iterator_category = decltype(__uc::at_most_bidirectional<Iter>());
+
+          private:
+            static constexpr __uc::format DecodeFormat = __uc::to_format<FromCodeUnit>();
+            static constexpr __uc::format EncodeFormat = __uc::to_format<ToCodeUnit>();
+
+            // uses this layout for readability and clarity
+            struct FromState {
+                Iter m_current_;
+                [[no_unique_address]] Sent m_last_;
+                [[no_unique_address]] gold::ranges::__ranges::maybe_present_t<std::bidirectional_iterator<Iter>, Iter> m_first_;
+                gold::int8_t m_to_inc_ = 0;
+                uc::transcoding_error m_err_ {};
+
+                constexpr FromState() = default;
+                constexpr FromState(Iter first, Iter current, Sent last)
+                    requires std::bidirectional_iterator<Iter>
+                : m_first_(first), m_current_(current), m_last_(last) {}
+
+                constexpr FromState(Iter current, Sent last)
+                : m_current_(std::move(current)), m_last_(last) {}
+
+                constexpr bool done() const noexcept {
+                    return m_current_ == m_last_;
+                }
+
+                constexpr bool reversed_done() const noexcept requires std::bidirectional_iterator<Iter> {
+                    return m_current_ == m_first_;
+                }
+
+                constexpr bool has_error() const noexcept {
+                    return m_err_ != uc::transcoding_error::none;
+                }
+
+                constexpr uc::transcoding_error error() const noexcept {
+                    return m_err_;
+                }
+
+                constexpr void next() {
+                    ++m_current_;
+                }
+
+                constexpr FromCodeUnit value() {
+                    return *m_current_;
+                }
+
+                constexpr FromCodeUnit value_then_next() {
+                    auto val = *m_current_;
+                    ++m_current_;
+                    return val;
+                }
+
+                constexpr void next_subsequence() {
+                    // only advance for forward iterators
+                    // because input-only iterators have already been advanced during decoding
+                    if constexpr (std::forward_iterator<Iter>)
+                        std::ranges::advance(m_current_, m_to_inc_);
+                }
+
+                // creates a guard object that restores current to its original
+                // state after being decoded
+                constexpr auto restore_upon_decoded() {
+                    if constexpr (std::forward_iterator<Iter>) {
+                        struct Guard {
+                            constexpr ~Guard() { m_this_->m_current_ = std::move(m_orig_); }
+                            FromState* m_this_;
+                            Iter m_orig_;
+                        };
+                        return Guard { this, m_current_ };
+                    } else {
+                        return nullptr;
+                    }
+                }
+            };
+
+            struct ToState {
+                ToCodeUnit m_buf_[4 / sizeof(ToCodeUnit)] = {};
+                gold::uint8_t m_buf_index_ = 0;
+                gold::uint8_t m_buf_last_ = 0;
+
+                constexpr bool done() const noexcept {
+                    return m_buf_index_ + 1 >= m_buf_last_;
+                }
+
+                constexpr bool reversed_done() const noexcept requires std::bidirectional_iterator<Iter> {
+                    return m_buf_index_ == 0;
+                }
+
+                constexpr ToCodeUnit value() const noexcept {
+                    return m_buf_[m_buf_index_];
+                }
+
+                constexpr void next() {
+                    ++m_buf_index_;
+                }
+
+                constexpr void prev() requires std::bidirectional_iterator<Iter> {
+                    --m_buf_index_;
+                }
+            };
+
+            //// data members
+            FromState m_from_;
+            ToState   m_to_;
+
+            /// mf_decode_one_
+            constexpr __uc::decode_one_result mf_decode_one_() {
+                if constexpr (DecodeFormat == __uc::format::utf8)
+                    return mf_decode_one_utf8_();
+                else if constexpr (DecodeFormat == __uc::format::utf16)
+                    return mf_decode_one_utf16_();
+                else if constexpr (DecodeFormat == __uc::format::utf32)
+                    return mf_decode_one_utf32_();
+                else
+                    static_assert(false);
+            }
+
+            /// mf_decode_one_utf8_
+            // for a Unicode code point value U+uv'wx'yz [0000 0000] [000u vvvv] [wwww xxxx] [yyyy zzzz]:
+            //
+            // Code Point Range    | Byte Count | Leading Byte | Continuation Bytes
+            // --------------------------------------------------------------------------------------
+            // U+0000 .. U+007F    | 1 Byte     | 0yyy zzzz    |            |            |
+            //                     |            | [00 .. 7F]   |            |            |
+            //                     |            |              |            |            |
+            // U+0080 .. U+07FF    | 2 Bytes    | 110x xxyy    | 10yy zzzz  |            |
+            //                     |            | [C2 .. DF]   | [80 .. BF] |            |
+            //                     |            |              |            |            |
+            // U+0800 .. U+FFFF    | 3 Bytes    | 1110 wwww    | 10xx xxyy  | 10yy zzzz  |
+            //                     |            | [E0 .. EF]   | [80 .. BF] | [80 .. BF] |
+            //                     |            |              |            |            |
+            // U+10000 .. U+10FFFF | 4 Bytes    | 1111 0uvv    | 10vv wwww  | 10xx xxyy  | 10yy zzzz
+            //                     |            | [F0 .. F4]   | [80 .. BF] | [80 .. BF] | [80 .. BF]
+
+            // Invalid UTF-8 Code Unit Sequence
+            // -> transcoding_error::invalid_utf8_leading_byte:
+            //    - leading byte: 0xC0 .. 0xC1 or 0xF5 .. 0xFF
+            //
+            // -> transcoding_error::unexpected_utf8_continuation_byte
+            //    - leading byte: 0x80 .. 0xBF
+            //
+            // -> transcoding_error::overlong
+            //    - leading byte: 0xE0 & 1st continuation byte: 0x80 .. 0x9F; or
+            //    - leading byte: 0xF0 & 1st continuation byte: 0x80 .. 0x8F
+            //
+            // -> transcoding_error::encoded_surrogate
+            //    - leading byte: 0xED & 1st continuation byte: 0xA0 .. 0xBF
+            //
+            // -> transcoding_error::out_of_range
+            //    - leading byte: 0xF4 & 1st continuation byte: 0x90 .. 0xBF
+            //
+            // -> transcoding_error::truncated_utf8_sequence
+            //    - valid leading byte
+            //      but ends with a continuation byte not in the range 0x80 .. 0xBF
+
+            constexpr __uc::decode_one_result mf_decode_one_utf8_() {
+                // creates a restore guard
+                auto _ = m_from_.restore_upon_decoded();
+                uc::transcoding_error error {};
+                char32_t c {};
+
+                gold::uint8_t u = m_from_.value_then_next();
+                gold::uint8_t to_incr = 1;
+                auto incr = [&, this] {
+                    ++to_incr;
+                    m_from_.next();
+                    return m_from_.done();
+                };
+
+                // start decoding
+                if (u <= 0x7F) [[likely]] { // ASCII
+                    c = u;
+                } else if (u < 0xC2) [[unlikely]] {
+                    error = uc::transcoding_error::invalid_utf8_leading_byte;
+                } else if (m_from_.done()) [[unlikely]] {
+                    error = uc::transcoding_error::truncated_utf8_sequence;
+                } else if (u <= 0xDF) { // [0xC2 .. 0xDF] [2-byte sequence]
+                    // leading byte: [110x xxyy]
+                    c = u & 0b0001'1111;
+                    u = m_from_.value(); // receives 1st continuation byte
+
+                    if (u < 0x80 || u > 0xBF) [[unlikely]] {
+                        error = uc::transcoding_error::truncated_utf8_sequence;
+                    } else {
+                        // [last] 1st continuation byte: [10yy zzzz]
+                        c = (c << 6) | (u & 0b0011'1111);
+                        incr();
+                    }
+                } else if (u <= 0xEF) { // [0xE0 .. 0xEF] [3-byte sequence]
+                    // leading byte: [1110 wwww]
+                    c = u & 0b0000'1111;
+                    gold::uint8_t l = u;
+                    u = m_from_.value(); // receives 1st continuation byte
+
+                    if (u < 0x80 || u > 0xBF) [[unlikely]] {
+                        error = uc::transcoding_error::truncated_utf8_sequence;
+                    } else if (l == 0xE0 && u >= 0x80 && u <= 0x9F) [[unlikely]] {
+                        error = uc::transcoding_error::overlong;
+                    } else if (l == 0xED && u >= 0xA0 && u <= 0xBF) [[unlikely]] {
+                        error = uc::transcoding_error::encoded_surrogate;
+                    } else if (incr()) [[unlikely]] { // reached end
+                        error = uc::transcoding_error::truncated_utf8_sequence;
+                    } else {
+                        // 1st continuation byte: [10xx xxyy]
+                        c = (c << 6) | (u & 0b0011'1111);
+                        // incr() has already been called, expect to receive the next code unit
+                        u = m_from_.value(); // receives 2nd continuation byte
+
+                        if (u < 0x80 || u > 0xBF) [[unlikely]] {
+                            error = uc::transcoding_error::truncated_utf8_sequence;
+                        } else {
+                            // [last] 2nd continuation byte: [10yy zzzz]
+                            c = (c << 6) | (u & 0b0011'1111);
+                            incr();
+                        }
+                    }
+                } else if (u <= 0xF4) { // [0xF0 .. 0xF4] [4-byte sequence]
+                    // leading byte: [1111 0uvv]
+                    c = u & 0b0000'0111;
+                    gold::uint8_t l = u;
+                    u = m_from_.value(); // receives 1st continuation byte
+
+                    if (u < 0x80 || u > 0xBF) [[unlikely]] {
+                        error = uc::transcoding_error::truncated_utf8_sequence;
+                    } else if (l == 0xF0 && u >= 0x80 && u <= 0x8F) [[unlikely]] {
+                        error = uc::transcoding_error::overlong;
+                    } else if (l == 0xF4 && u >= 0x90 && u <= 0xBF) [[unlikely]] {
+                        error = uc::transcoding_error::out_of_range;
+                    } else if (incr()) [[unlikely]] { // reached end
+                        error = uc::transcoding_error::truncated_utf8_sequence;
+                    } else {
+                        // 1st continuation byte: [10vv wwww]
+                        c = (c << 6) | (u & 0b0011'1111);
+                        // incr() has already been called, expect to receive the next code unit
+                        u = m_from_.value(); // receives 2nd continuation byte
+
+                        if (u < 0x80 || u > 0xBF) [[unlikely]] {
+                            error = uc::transcoding_error::truncated_utf8_sequence;
+                        } else if (incr()) [[unlikely]] { // reached end
+                            error = uc::transcoding_error::truncated_utf8_sequence;
+                        } else {
+                            // 2nd continuation byte: [10xx xxyy]
+                            c = (c << 6) | (u & 0b0011'1111);
+                            // incr() has already been called, expect to receive the next code unit
+                            u = m_from_.value(); // receives 3rd continuation byte
+
+                            if (u < 0x80 || u > 0xBF) [[unlikely]] {
+                                error = uc::transcoding_error::truncated_utf8_sequence;
+                            } else {
+                                // [last] 3rd continuation byte: [10yy zzzz]
+                                c = (c << 6) | (u & 0b0011'1111);
+                                incr();
+                            }
+                        }
+                    }
+                } else [[unlikely]] { // [0xF5 .. 0xFF]
+                    error = uc::transcoding_error::invalid_utf8_leading_byte;
+                }
+
+                if (error != uc::transcoding_error::none)
+                    c = __uc::replacement_character;
+
+                return {.code_point = c, .err = error, .units_to_increase = to_incr};
+            }
+
+            /// mf_decode_one_utf16_
+            // valid UTF-16:
+            // -> current input subsequence represents a scalar value
+            // -> current input subsequence contains high surrogate then followed by low surrogate
+
+            // for a Unicode code point value U+uvwxyz
+
+            // UTF-16 Code Unit 1 | UTF-16 Code Unit 2 | Remarks          | Code Point Equivalent
+            // ------------------------------------------------------------------------------------
+            // u+0000 .. u+D7FF   |                    | Scalar Value     | U+0000 .. U+D7FF
+            //                    |                    |                  |
+            // u+D800 .. u+DBFF   | u+0000 .. u+DBFF   | Error            | Unpaired High Surrogate
+            //                    |                    |                  |
+            // u+D800 .. u+DBFF   | u+DC00 .. u+DFFF   | Scalar Value     | U+010000 .. U+10FFFF
+            // [High-Surrogate]   | [Low-Surrogate]    | [Surrogate-Pair] |
+            //                    |                    |                  |
+            // u+D800 .. u+DBFF   | u+E000 .. u+FFFF   | Error            | Unpaired High Surrogate
+            //                    |                    |                  |
+            // u+DC00 .. u+DFFF   |                    | Error            | Unpaired Low Surrogate
+            //                    |                    |                  |
+            // u+E000 .. u+FFFF   |                    | Scalar Value     | U+E000 .. U+FFFF
+
+            // NOTE:
+            // -> valid BMP characters are disjoint: U+0000 .. U+D7FF or U+E000 .. U+FFFF
+
+            // invalid UTF-16:
+            // -> transcoding_error::encoded_surrogate
+            //    - current input subsequence is in the range U+D800 .. U+DFFF
+            // -> transcoding_error::out_of_range
+            //    - current input subsequence is outside the code point range U+0 .. U+10FFFF
+            constexpr __uc::decode_one_result mf_decode_one_utf16_() {
+                // creates a restore guard
+                auto _ = m_from_.restore_upon_decoded();
+                uc::transcoding_error error {};
+                char32_t c {};
+
+                gold::uint16_t u = m_from_.value_then_next();
+                gold::uint8_t to_incr = 1;
+
+                // start decoding
+                if (__uc::is_scalar_value(static_cast<char32_t>(u))) [[likely]] {
+                    // 1 code point = 1 scalar value
+                    c = static_cast<char32_t>(u);
+                } else if (__uc::is_high_surrogate(static_cast<char32_t>(u)) && !m_from_.done()) {
+                    // 1 code point = high surrogate + low surrogate (in order)
+                    gold::uint16_t u2 = m_from_.value();
+                    if (!__uc::is_low_surrogate(static_cast<char32_t>(u2))) [[unlikely]] {
+                        error = uc::transcoding_error::unpaired_high_surrogate;
+                    } else {
+                        m_from_.next();
+                        to_incr = 2;
+                        // Surrogate-Pair:
+                        //  [High-Surrogate]   [Low-Surrogate]       [Equivalent Code Point]
+                        //  [u+D800 .. u+DBFF] [u+DC00 .. u+DFFF] => [U+010000 .. U+10FFFF]
+
+                        // let U  : char32_t be the equivalent code point
+                        // let W1 : char16_t be the high surrogate code unit
+                        // let W2 : char16_t be the low surrogate code unit
+
+                        // starting from U+01'00'00 = [0000 0000] [0000 0001] [0000 0000] [0000 0000]
+                        //         until U+10'FF'FF = [0000 0000] [0001 0000] [1111 1111] [1111 1111]
+
+                        // -----------------------------------------------------
+                        // U' = [0000 0000] [0000 yyyy] [yyyy yyxx] [xxxx xxxx]
+                        // W1 = [1101 10yy] [yyyy yyyy]
+                        //    - [D8 ... DB] [00 ... FF]
+                        // W2 = [1101 11xx] [xxxx xxxx]
+                        //    - [DC ... DF] [00 ... FF]
+                        //
+                        // U = U' + 0x1'00'00
+                        const gold::uint32_t w1 = u  & 0x3FF;
+                        const gold::uint32_t w2 = u2 & 0x3FF;
+                        c  = (w1 << 10) | w2;
+                        c += 0x1'00'00;
+                    }
+                } else [[unlikely]] {
+                    // started with low surrogate (unpaired)
+                    error = uc::transcoding_error::unpaired_low_surrogate;
+                }
+
+                if (error != uc::transcoding_error::none)
+                    c = __uc::replacement_character;
+
+                return {.code_point = c, .err = error, .units_to_increase = to_incr};
+            }
+
+            /// mf_decode_one_utf32_
+            // valid UTF-32:
+            // -> current input subsequence represents a scalar value
+
+            // invalid UTF-32:
+            // -> transcoding_error::encoded_surrogate
+            //    - current input subsequence is in the range U+D800 .. U+DFFF
+            // -> transcoding_error::out_of_range
+            //    - current input subsequence is outside the code point range U+0 .. U+10FFFF
+            constexpr __uc::decode_one_result mf_decode_one_utf32_() {
+                // creates a restore guard
+                auto _ = m_from_.restore_upon_decoded();
+                uc::transcoding_error error {};
+
+                // receives the code point directly
+                char32_t c = m_from_.value_then_next();
+
+                if (!__uc::is_code_point(c)) [[unlikely]] {
+                    error = uc::transcoding_error::out_of_range;
+                } else if (__uc::is_surrogate(c)) [[unlikely]] {
+                    error = uc::transcoding_error::encoded_surrogate;
+                }
+
+                if (error != uc::transcoding_error::none)
+                    c = __uc::replacement_character;
+
+                return {.code_point = c, .err = error, .units_to_increase = 1};
+            }
+
+            /// mf_encode_one_
+            constexpr void mf_encode_one_(__uc::decode_one_result decoded) {
+                auto [code_point, err, to_inc] = decoded;
+                m_from_.m_to_inc_ = to_inc;
+                m_from_.m_err_    = err;
+                m_to_.m_buf_index_ = 0;
+                if constexpr (EncodeFormat == __uc::format::utf32) {
+                    m_to_.m_buf_[0] = code_point;
+                    m_to_.m_buf_last_ = 1;
+                } else if constexpr (EncodeFormat == __uc::format::utf16) {
+                    if (code_point <= 0xD7FF || (code_point >= 0xE000 && code_point <= 0xFFFF)) {
+                        // single code unit
+                        m_to_.m_buf_[0] = static_cast<char16_t>(code_point);
+                        m_to_.m_buf_[1] = 0;
+                        m_to_.m_buf_last_ = 1;
+                    } else {
+                        // surrogate-pair: double code unit
+                        //  [High-Surrogate]   [Low-Surrogate]       [Equivalent Code Point]
+                        //  [u+D800 .. u+DBFF] [u+DC00 .. u+DFFF] => [U+010000 .. U+10FFFF]
+
+                        // let U  : char32_t be the equivalent code point
+                        // let W1 : char16_t be the high surrogate code unit
+                        // let W2 : char16_t be the low surrogate code unit
+
+                        // starting from U+01'00'00 = [0000 0000] [0000 0001] [0000 0000] [0000 0000]
+                        //         until U+10'FF'FF = [0000 0000] [0001 0000] [1111 1111] [1111 1111]
+
+                        // -----------------------------------------------------
+                        // U' = [0000 0000] [0000 yyyy] [yyyy yyxx] [xxxx xxxx]
+                        // W1 = [1101 10yy] [yyyy yyyy]
+                        //    - [D8 ... DB] [00 ... FF]
+                        // W2 = [1101 11xx] [xxxx xxxx]
+                        //    - [DC ... DF] [00 ... FF]
+                        //
+                        // U  = U' + 0x1'00'00
+                        const char32_t c = code_point - 0x1'00'00;
+                        const char16_t high_bits = (c & 0xF'FC'00) >> 10;
+                        const char16_t low_bits  =  c & 0x3'FF;
+                        m_to_.m_buf_[0] = 0xD8'00 | high_bits;
+                        m_to_.m_buf_[1] = 0xDC'00 | low_bits;
+                        m_to_.m_buf_last_ = 2;
+                    }
+                } else if constexpr (EncodeFormat == __uc::format::utf8) {
+                    // for a Unicode code point value U+uv'wx'yz:
+                    // [0000 0000] [000u vvvv] [wwww xxxx] [yyyy zzzz]
+                    //
+                    // Code Point Range    | Byte Count | Leading Byte | Continuation Bytes
+                    // --------------------------------------------------------------------------------------
+                    // U+0000 .. U+007F    | 1 Byte     | 0yyy zzzz    |            |            |
+                    //                     |            | [00 .. 7F]   |            |            |
+                    //                     |            |              |            |            |
+                    // U+0080 .. U+07FF    | 2 Bytes    | 110x xxyy    | 10yy zzzz  |            |
+                    //                     |            | [C2 .. DF]   | [80 .. BF] |            |
+                    //                     |            |              |            |            |
+                    // U+0800 .. U+FFFF    | 3 Bytes    | 1110 wwww    | 10xx xxyy  | 10yy zzzz  |
+                    //                     |            | [E0 .. EF]   | [80 .. BF] | [80 .. BF] |
+                    //                     |            |              |            |            |
+                    // U+10000 .. U+10FFFF | 4 Bytes    | 1111 0uvv    | 10vv wwww  | 10xx xxyy  | 10yy zzzz
+                    //                     |            | [F0 .. F4]   | [80 .. BF] | [80 .. BF] | [80 .. BF]
+                    const char32_t c = code_point;
+                    if (c <= 0x7F) [[likely]] { // [U+0000 .. U+007F] [1 code unit]
+                        m_to_.m_buf_[0] = static_cast<char8_t>(c);
+                        m_to_.m_buf_[1] = m_to_.m_buf_[2] = m_to_.m_buf_[3] = 0;
+                        m_to_.m_buf_last_ = 1;
+                    } else if (c <= 0x7FF) { // [U+0080 .. U+07FF] [2 code units]
+                        m_to_.m_buf_[0] = static_cast<char8_t>(0xC0 | (c >> 6));
+                        m_to_.m_buf_[1] = static_cast<char8_t>(0x80 | (c & 0x3F));
+                        m_to_.m_buf_[2] = m_to_.m_buf_[3] = 0;
+                        m_to_.m_buf_last_ = 2;
+                    } else if (c <= 0xFFFF) { // [U+0800 .. U+FFFF] [3 code units]
+                        m_to_.m_buf_[0] = static_cast<char8_t>(0xE0 | (c >> 12));
+                        m_to_.m_buf_[1] = static_cast<char8_t>(0x80 | ((c >> 6) & 0x3F));
+                        m_to_.m_buf_[2] = static_cast<char8_t>(0x80 | (c & 0x3F));
+                        m_to_.m_buf_[3] = 0;
+                        m_to_.m_buf_last_ = 3;
+                    } else { // [U+10000 .. U+10FFFF] [4 code units]
+                        m_to_.m_buf_[0] = static_cast<char8_t>(0xF0 | (c >> 18));
+                        m_to_.m_buf_[1] = static_cast<char8_t>(0x80 | ((c >> 12) & 0x3F));
+                        m_to_.m_buf_[2] = static_cast<char8_t>(0x80 | ((c >> 6) & 0x3F));
+                        m_to_.m_buf_[3] = static_cast<char8_t>(0x80 | (c & 0x3F));
+                        m_to_.m_buf_last_ = 4;
+                    }
+                } else {
+                    static_assert(false);
+                }
+            }
+
+            /// mf_consume_
+            constexpr void mf_consume_() {
+                mf_encode_one_(mf_decode_one_());
+            }
+
+            /// TODO: mf_reversed_consume_
+            constexpr void mf_reversed_consume_() {
+
+            }
+
+          public:
+            constexpr utf_iterator() = default;
+            constexpr utf_iterator(const utf_iterator&) requires std::copyable<Iter> = default;
+            constexpr utf_iterator& operator=(const utf_iterator&) requires std::copyable<Iter> = default;
+            constexpr utf_iterator(utf_iterator&&) = default;
+            constexpr utf_iterator& operator=(utf_iterator&&) = default;
+
+            constexpr utf_iterator(Iter first, Iter current, Sent last)
+                requires std::bidirectional_iterator<Iter>
+            : m_from_(first, current, last) {
+                if (!m_from_.done())
+                    mf_consume_(); // needs this to use 1st operator*
+            }
+
+            constexpr utf_iterator(Iter current, Sent last)
+                requires std::forward_iterator<Iter>
+            : m_from_(current, last) {
+                if (!m_from_.done())
+                    mf_consume_(); // needs this to use 1st operator*
+            }
+
+            constexpr utf_iterator(Iter current, Sent last)
+            : m_from_(std::move(current), last) {
+                if (!m_from_.done())
+                    mf_consume_(); // needs this to use 1st operator*
+            }
+
+            /// TODO: add converting constructor
+
+            constexpr Iter base() const requires std::forward_iterator<Iter> {
+                return m_from_.m_current_;
+            }
+
+            constexpr value_type operator*() const {
+                return m_to_.value();
+            }
+
+            constexpr uc::transcoding_error error() const noexcept {
+                return m_from_.m_err_;
+            }
+
+            constexpr utf_iterator& operator++() {
+                if (m_to_.done() && !m_from_.done()) {
+                    m_from_.next_subsequence();
+                    if (!m_from_.done()) {
+                        mf_consume_();
+                    } else {
+                        m_to_.m_buf_index_ = 0; // idk why
+                    }
+                } else if (!m_to_.done()) {
+                    m_to_.next();
+                }
+                return *this;
+            }
+
+            constexpr void operator++(int) {
+                ++*this;
+            }
+
+            constexpr utf_iterator operator++(int) requires std::forward_iterator<Iter> {
+                auto temp = *this;
+                ++*this;
+                return temp;
+            }
+
+            constexpr utf_iterator& operator--() requires std::bidirectional_iterator<Iter> {
+                if (m_to_.reversed_done() && !m_from_.reversed_done())
+                    mf_reversed_consume_();
+                else if (!m_to_.reversed_done())
+                    m_to_.prev();
+                return *this;
+            }
+
+            constexpr utf_iterator operator--(int) requires std::bidirectional_iterator<Iter> {
+                auto temp = *this;
+                --*this;
+                return temp;
+            }
+
+            friend constexpr bool operator==(const utf_iterator& lhs, const utf_iterator& rhs) {
+                if constexpr (std::forward_iterator<Iter>)
+                    return lhs.m_from_.m_current_ == rhs.m_from_.m_current_
+                        && lhs.m_to_.m_buf_index_ == rhs.m_to_.m_buf_index_;
+                else if (lhs.m_from_.m_current_ != rhs.m_from_.m_current_)
+                    return false;
+                else if (lhs.m_to_.m_buf_index_ == rhs.m_to_.m_buf_index_
+                      && lhs.m_to_.m_buf_last_  == rhs.m_to_.m_buf_last_)
+                    return true;
+                else
+                    return lhs.m_to_.m_buf_index_ == lhs.m_to_.m_buf_last_
+                        && rhs.m_to_.m_buf_index_ == rhs.m_to_.m_buf_last_;
+            }
+
+            friend constexpr bool operator==(const utf_iterator& lhs, Sent rhs) {
+                if constexpr (std::forward_iterator<Iter>)
+                    return lhs.m_from_.m_current_ == rhs;
+                else
+                    return lhs.m_from_.m_current_ == rhs
+                        && lhs.m_to_.m_buf_index_ == lhs.m_to_.m_buf_last_;
+            }
+        };
+
+        /// __uc::to_utf_view_impl
+        template <__uc::code_unit_to_type ToCodeUnit, __uc::from_utf_view V>
+        class to_utf_view_impl : public std::ranges::view_interface<to_utf_view_impl<ToCodeUnit, V>> {
+          private:
+
+            template <bool Const>
+            using BaseIter = std::ranges::iterator_t<ranges::__ranges::maybe_const_t<Const, V>>;
+
+            template <bool Const>
+            using BaseSent = std::ranges::sentinel_t<ranges::__ranges::maybe_const_t<Const, V>>;
+
+            template <bool Const>
+            using UTF_Iter = __uc::utf_iterator<std::ranges::range_value_t<V>, ToCodeUnit, BaseIter<Const>, BaseSent<Const>>;
+
+            template <bool Const>
+            using Iter = UTF_Iter<Const>;
+
+            template <bool Const, bool Common = false>
+            struct SentImpl {
+                using type = BaseSent<Const>;
+            };
+
+            template <bool Const>
+            struct SentImpl<Const, true> {
+                using type = UTF_Iter<Const>;
+            };
+
+            template <bool Const>
+            using Sent = SentImpl<Const, std::ranges::common_range<ranges::__ranges::maybe_const_t<Const, V>>>::type;
+
+            template <bool Const>
+            static constexpr Iter<Const> s_make_begin_(BaseIter<Const> first, BaseSent<Const> last) {
+                if constexpr (std::bidirectional_iterator<BaseIter<Const>>)
+                    return Iter<Const>(first, first, last);
+                else if constexpr (std::forward_iterator<BaseIter<Const>>)
+                    return Iter<Const>(first, last);
+                else
+                    return Iter<Const>(std::move(first), last);
+            }
+
+            template <bool Const>
+            static constexpr Sent<Const> s_make_end_(BaseIter<Const> first, BaseSent<Const> last) {
+                if constexpr (std::bidirectional_iterator<BaseIter<Const>>)
+                    return Sent<Const>(first, last, last);
+                else
+                    return Sent<Const>(last, last);
+            }
+
+            // data members
+            V m_base_ = V();
+
+          public:
+            constexpr to_utf_view_impl() requires std::default_initializable<V> = default;
+            constexpr to_utf_view_impl(V base) : m_base_(std::move(base)) {}
+
+            constexpr V base() const& requires std::copy_constructible<V>
+            { return m_base_; }
+
+            constexpr V base() &&
+            { return std::move(m_base_); }
+
+            constexpr auto begin()
+            { return s_make_begin_<false>(std::ranges::begin(m_base_), std::ranges::end(m_base_)); }
+
+            constexpr auto begin() const requires std::forward_iterator<BaseIter<true>>
+            { return s_make_begin_<true>(std::ranges::begin(m_base_), std::ranges::end(m_base_)); }
+
+            constexpr auto end() {
+                if constexpr (!std::ranges::forward_range<V> || !std::ranges::common_range<V>)
+                    return std::ranges::end(m_base_);
+                else
+                    return s_make_end_<false>(std::ranges::begin(m_base_), std::ranges::end(m_base_));
+            }
+
+            constexpr auto end() const requires std::forward_iterator<BaseIter<true>>
+            { return s_make_end_<true>(std::ranges::begin(m_base_), std::ranges::end(m_base_)); }
+
+            constexpr bool empty() const
+            { return std::ranges::empty(m_base_); }
+        };
+
+    } // namespace __uc
+
+    /// UTF View
+    // - these views are bidirectional ranges but actually not (the reverse read haven't been implemented)
+    // - all views are not sized-ranges
+    // - does not support unwrapping other UTF views yet
+    /// to_utf8_view
+    template <__uc::from_utf_view V>
+    class to_utf8_view : public __uc::to_utf_view_impl<char8_t, V> {
+      private:
+        using Base = __uc::to_utf_view_impl<char8_t, V>;
+
+      public:
+        using Base::Base;
+    };
+
+    template <typename R>
+    to_utf8_view(R&&) -> to_utf8_view<std::views::all_t<R>>;
+
+    /// to_utf16_view
+    template <__uc::from_utf_view V>
+    class to_utf16_view : public __uc::to_utf_view_impl<char16_t, V> {
+      private:
+        using Base = __uc::to_utf_view_impl<char16_t, V>;
+
+      public:
+        using Base::Base;
+    };
+
+    template <typename R>
+    to_utf16_view(R&&) -> to_utf16_view<std::views::all_t<R>>;
+
+    /// to_utf32_view
+    template <__uc::from_utf_view V>
+    class to_utf32_view : public __uc::to_utf_view_impl<char32_t, V> {
+      private:
+        using Base = __uc::to_utf_view_impl<char32_t, V>;
+
+      public:
+        using Base::Base;
+    };
+
+    template <typename R>
+    to_utf32_view(R&&) -> to_utf32_view<std::views::all_t<R>>;
+
+    inline namespace __views {
+
+        /// TODO: add short circuitry and unwrapping:
+
+        /// __views::to_utf_fn
+        template <typename CharT>
+        struct to_utf_fn {
+
+            template <typename R>
+            using utf_view = __uc::to_utf_view_impl<CharT, std::views::all_t<R>>;
+
+            template <std::ranges::viewable_range R>
+            constexpr auto operator()(R&& r) const
+                requires requires { utf_view<R>{std::forward<R>(r)}; }
+            { return utf_view<R>{std::forward<R>(r)}; }
+        };
+
+    } // inline namespace __views
+
+    /// to_utf8
+    inline constexpr ranges::range_adaptor_closure<__views::to_utf_fn<char8_t>> to_utf8 {};
+
+    /// to_utf16
+    inline constexpr ranges::range_adaptor_closure<__views::to_utf_fn<char16_t>> to_utf16 {};
+
+    /// to_utf32
+    inline constexpr ranges::range_adaptor_closure<__views::to_utf_fn<char32_t>> to_utf32 {};
+
+    /// to_utf8_string
+    constexpr std::string to_utf8_string(char32_t c) {
+        std::u32string_view view (&c, 1);
+        return std::string(std::from_range, uc::to_utf8(view));
+    }
+
+    template <__uc::utf_range R>
+    constexpr std::string to_utf8_string(R&& r) {
+        return std::string(std::from_range, uc::to_utf8(r));
+    }
+
+    /// to_utf8_u8string
+    constexpr std::u8string to_utf8_u8string(char32_t c) {
+        std::u32string_view view (&c, 1);
+        return std::u8string(std::from_range, uc::to_utf8(view));
+    }
+
+    template <__uc::utf_range R>
+    constexpr std::u8string to_utf8_u8string(R&& r) {
+        return std::u8string(std::from_range, uc::to_utf8(r));
+    }
+
+    /// to_utf16_string
+    constexpr std::u16string to_utf16_string(char32_t c) {
+        std::u32string_view view (&c, 1);
+        return std::u16string(std::from_range, uc::to_utf16(view));
+    }
+
+    template <__uc::utf_range R>
+    constexpr std::u16string to_utf16_string(R&& r) {
+        return std::u16string(std::from_range, uc::to_utf16(r));
+    }
+
+    /// to_utf32_string
+    constexpr std::u32string to_utf32_string(char32_t c) {
+        std::u32string_view view (&c, 1);
+        return std::u32string(std::from_range, uc::to_utf32(view));
+    }
+
+    template <__uc::utf_range R>
+    constexpr std::u32string to_utf32_string(R&& r) {
+        return std::u32string(std::from_range, uc::to_utf32(r));
+    }
+
+    /// validate_utf_sequence
+    template <__uc::utf_range R>
+    constexpr uc::transcoding_state validate_utf_sequence(R&& r) {
+        auto utf_seq = to_utf32(r);
+        uc::transcoding_error err = uc::transcoding_error::none;
+        auto iter = utf_seq.begin();
+        auto sent = utf_seq.end();
+        for (; iter != sent; ++iter) {
+            if (iter.error()) {
+                err = iter.error();
+                break;
+            }
+        }
+        return {err};
+    }
+
+} // namespace gold::uc
+
+#endif // __GOLD_UNICODE

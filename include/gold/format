@@ -1,0 +1,60 @@
+// <gold/format> - gold++ library
+
+// Copyright (C) [ 2021 - 2024 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_FORMAT
+#define __GOLD_FORMAT
+
+#ifdef __GOLDM_FMT_TRY
+# undef __GOLDM_FMT_TRY
+#endif
+
+#ifdef __GOLDM_FMT_TRYV
+# undef __GOLDM_FMT_TRYV
+#endif
+
+#define __GOLDM_FMT_TRY(fmt_expr, block) \
+    if (auto fmt_expr_result = fmt_expr; !fmt_expr_result) \
+        return __format::error_t(fmt_expr_result.error()); \
+    else { \
+        decltype(auto) try_result = *fmt_expr_result; \
+        block \
+    }
+
+#define __GOLDM_FMT_TRYV(fmt_expr, block) \
+    if (auto fmt_expr_result = fmt_expr; !fmt_expr_result) \
+        return __format::error_t(fmt_expr_result.error()); \
+    else { \
+        block \
+    }
+
+#include <gold/bits/format/fwd.hpp>
+#include <gold/bits/format/error.hpp>
+#include <gold/bits/format/format_parse_context.hpp>
+#include <gold/bits/format/format_to_n_result.hpp>
+#include <gold/bits/format/sink.hpp>
+#include <gold/bits/format/format_arg_kind.hpp>
+#include <gold/bits/format/format_args.hpp>
+#include <gold/bits/format/format_context.hpp>
+#include <gold/bits/format/format_arg_handle.hpp>
+#include <gold/bits/format/concepts.hpp>
+#include <gold/bits/format/parser.hpp>
+#include <gold/bits/format/formatter.hpp>
+#include <gold/bits/format/std_formatter.hpp>
+#include <gold/bits/format/tuple_formatter.hpp>
+#include <gold/bits/format/range_formatter.hpp>
+#include <gold/bits/format/range_default_formatter.hpp>
+#include <gold/bits/format/scanner.hpp>
+#include <gold/bits/format/format_string.hpp>
+#include <gold/bits/format/format_functions.hpp>
+
+#ifdef __GOLDM_FMT_TRY
+# undef __GOLDM_FMT_TRY
+#endif // __GOLDM_FMT_TRY
+
+#ifdef __GOLDM_FMT_TRYV
+# undef __GOLDM_FMT_TRYV
+#endif // __GOLDM_FMT_TRYV
+
+#endif // __GOLD_FORMAT

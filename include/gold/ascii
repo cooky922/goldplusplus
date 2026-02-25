@@ -1,0 +1,141 @@
+// <gold/ascii> - gold++ library
+
+// Copyright (C) [ 2021 - 2025 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_ASCII
+#define __GOLD_ASCII
+
+#include <gold/bits/algo/contains.hpp>
+#include <gold/bits/algo/min_max.hpp>
+
+namespace gold {
+
+    namespace __uc {
+
+        /// __uc::is_char_type
+        template <typename>
+        constexpr bool is_char_type = false;
+
+        template <>
+        constexpr bool is_char_type<char> = true;
+
+        template <>
+        constexpr bool is_char_type<wchar_t> = true;
+
+        template <>
+        constexpr bool is_char_type<char8_t> = true;
+
+        template <>
+        constexpr bool is_char_type<char16_t> = true;
+
+        template <>
+        constexpr bool is_char_type<char32_t> = true;
+
+        /// __uc::is_character_type
+        template <typename T>
+        concept is_character_type = __uc::is_char_type<T>;
+
+    } // namespace __uc
+
+    //// Character Classifications: ASCII
+    /// is_ascii
+    constexpr bool is_ascii(__uc::is_character_type auto c) noexcept {
+        return static_cast<char32_t>(c) <= U'\u{7F}';
+    }
+
+    /// is_ascii_digit
+    constexpr bool is_ascii_digit(__uc::is_character_type auto c, int base = 10) noexcept {
+        // pre: 2 <= base <= 36
+        const char32_t cc = static_cast<char32_t>(c);
+        return (cc >= U'0' && cc < U'0' + __algo::min(base, 10))
+            || (cc >= U'a' && cc < U'a' + __algo::max(base - 10, 0))
+            || (cc >= U'A' && cc < U'A' + __algo::max(base - 10, 0));
+    }
+
+    /// is_ascii_bit
+    constexpr bool is_ascii_bit(__uc::is_character_type auto c) noexcept {
+        return is_ascii_digit(c, 2);
+    }
+
+    /// is_ascii_octal_digit
+    constexpr bool is_ascii_octal_digit(__uc::is_character_type auto c) noexcept {
+        return is_ascii_digit(c, 8);
+    }
+
+    /// is_ascii_hex_digit
+    constexpr bool is_ascii_hex_digit(__uc::is_character_type auto c) noexcept {
+        return is_ascii_digit(c, 16);
+    }
+
+    /// is_ascii_lower_alpha
+    constexpr bool is_ascii_lower_alpha(__uc::is_character_type auto c) noexcept {
+        const char32_t cc = static_cast<char32_t>(c);
+        return cc >= U'a' && cc <= U'z';
+    }
+
+    /// is_ascii_upper_alpha
+    constexpr bool is_ascii_upper_alpha(__uc::is_character_type auto c) noexcept {
+        const char32_t cc = static_cast<char32_t>(c);
+        return cc >= U'A' && cc <= U'Z';
+    }
+
+    /// is_ascii_alpha
+    constexpr bool is_ascii_alpha(__uc::is_character_type auto c) noexcept {
+        return is_ascii_lower_alpha(c) || is_ascii_upper_alpha(c);
+    }
+
+    /// is_ascii_alphanumeric
+    constexpr bool is_ascii_alphanumeric(__uc::is_character_type auto c) noexcept {
+        return is_ascii_alpha(c) || is_ascii_digit(c);
+    }
+
+    /// is_ascii_punctuation
+    constexpr bool is_ascii_punctuation(__uc::is_character_type auto c) noexcept {
+        constexpr char32_t charset[] = U"!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
+        return __algo::string_contains(charset, static_cast<char32_t>(c));
+    }
+
+    /// is_ascii_graphical
+    constexpr bool is_ascii_graphical(__uc::is_character_type auto c) noexcept {
+        return is_ascii_alphanumeric(c) || is_ascii_punctuation(c);
+    }
+
+    /// is_ascii_printable
+    constexpr bool is_ascii_printable(__uc::is_character_type auto c) noexcept {
+        return is_ascii_graphical(c) || static_cast<char32_t>(c) == U' ';
+    }
+
+    /// is_ascii_horizontal_whitespace
+    constexpr bool is_ascii_horizontal_whitespace(__uc::is_character_type auto c) noexcept {
+        const char32_t cc = static_cast<char32_t>(c);
+        return cc == U' ' || cc == U'\t';
+    }
+
+    /// is_ascii_whitespace
+    constexpr bool is_ascii_whitespace(__uc::is_character_type auto c) noexcept {
+        constexpr char32_t charset[] = U" \f\n\r\t\v";
+        return __algo::string_contains(charset, static_cast<char32_t>(c));
+    }
+
+    /// is_ascii_control
+    constexpr bool is_ascii_control(__uc::is_character_type auto c) noexcept {
+        const char32_t cc = static_cast<char32_t>(c);
+        return cc <= U'\u{1F}' || cc == U'\N{DELETE}';
+    }
+
+    /// ascii_to_lower
+    template <__uc::is_character_type T>
+    constexpr T ascii_to_lower(T c) noexcept {
+        return is_ascii_upper_alpha(c) ? static_cast<T>(static_cast<char32_t>(c) - U'A' + U'a') : c;
+    }
+
+    /// ascii_to_upper
+    template <__uc::is_character_type T>
+    constexpr T ascii_to_upper(T c) noexcept {
+        return is_ascii_lower_alpha(c) ? static_cast<T>(static_cast<char32_t>(c) - U'a' + U'A') : c;
+    }
+
+} // namespace gold
+
+#endif // __GOLD_ASCII

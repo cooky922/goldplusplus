@@ -1,0 +1,887 @@
+// <gold/preview/linalg> - gold++ library
+
+// Copyright (C) [ 2021 - 2025 ] - present Desmond Gold
+
+// note: this is only a prototype
+// note: this header targets linear algebra interface
+
+#pragma once
+#ifndef __GOLD_PREVIEW_LINALG
+#define __GOLD_PREVIEW_LINALG
+
+#include <gold/mdspan>
+#include <gold/mdarray>
+#include <gold/basic_types>
+#include <gold/bits/concepts/types.hpp>
+#include <gold/bits/algo/copy.hpp>
+#include <cmath>
+
+//// Namespace Setups
+namespace gold::inline preview {
+    // main namespace
+    namespace math::linalg {}
+    // shortcut namespace
+    namespace linalg = math::linalg;
+} // gold::inline preview
+
+//// Main Interface
+namespace gold::inline preview::math::linalg {
+
+    /// linalg::inplace_static_fill[_t]
+    struct inplace_static_fill_t { explicit inplace_static_fill_t() = default; };
+    inline constexpr inplace_static_fill_t inplace_static_fill {};
+
+    /// linalg::inplace_dynamic_fill[_t]
+    struct inplace_dynamic_fill_t { explicit inplace_dynamic_fill_t() = default; };
+    inline constexpr inplace_dynamic_fill_t inplace_dynamic_fill {};
+
+    namespace __linalg {
+
+        /// __linalg::storage_mode
+        enum class storage_mode : bool
+        { store_static, store_dynamic };
+
+        /// __linalg::numeric_element
+        template <typename T>
+        concept numeric_element = std::is_arithmetic_v<T>
+                               && std::is_signed_v<T>;
+
+        /// __linalg::all_static_or_all_dynamic
+        template <std::size_t R, std::size_t C>
+        constexpr bool all_static_or_all_dynamic =
+            (R == std::dynamic_extent && C == std::dynamic_extent) ||
+            (R != std::dynamic_extent && C != std::dynamic_extent);
+
+        /// __linalg::valid_size_for_vec
+        template <std::size_t N>
+        constexpr bool valid_size_for_vec =
+            (N != 0);
+
+        /// __linalg::valid_size_for_mat
+        template <std::size_t R, std::size_t C>
+        constexpr bool valid_size_for_mat =
+            (R != 0) && (C != 0) &&
+            all_static_or_all_dynamic<R, C>;
+
+        /// __linalg::as_nested_view [TODO]
+        // unflatten mdspan into nested ranges
+        template <typename>
+        struct as_nested_view {};
+
+    } // namespace __linalg
+
+    /// linalg::basic_vec [fwd]
+    template <typename T, std::size_t N = std::dynamic_extent>
+        requires __linalg::numeric_element<T> &&
+                 __linalg::valid_size_for_vec<N>
+    class basic_vec;
+
+    /// linalg::vec_2
+    template <typename T>
+    using vec_2 = basic_vec<T, 2>;
+
+    using vec_2i = vec_2<int>;
+    using vec_2f = vec_2<float>;
+    using vec_2d = vec_2<double>;
+
+    /// linalg::vec_3
+    template <typename T>
+    using vec_3 = basic_vec<T, 3>;
+
+    using vec_3i = vec_3<int>;
+    using vec_3f = vec_3<float>;
+    using vec_3d = vec_3<double>;
+
+    /// linalg::vec_4
+    template <typename T>
+    using vec_4 = basic_vec<T, 4>;
+
+    using vec_4i = vec_4<int>;
+    using vec_4f = vec_4<float>;
+    using vec_4d = vec_4<double>;
+
+    /// linalg::basic_mat [fwd]
+    template <typename T, std::size_t R = std::dynamic_extent,
+                          std::size_t C = std::dynamic_extent>
+        requires __linalg::numeric_element<T> &&
+                 __linalg::valid_size_for_mat<R, C>
+    class basic_mat;
+
+    /// linalg::mat_2x2
+    template <typename T>
+    using mat_2x2 = basic_mat<T, 2, 2>;
+
+    using mat_2x2i = mat_2x2<int>;
+    using mat_2x2f = mat_2x2<float>;
+    using mat_2x2d = mat_2x2<double>;
+
+    /// linalg::mat_3x3
+    template <typename T>
+    using mat_3x3 = basic_mat<T, 3, 3>;
+
+    using mat_3x3i = mat_3x3<int>;
+    using mat_3x3f = mat_3x3<float>;
+    using mat_3x3d = mat_3x3<double>;
+
+    /// linalg::mat_4x4
+    template <typename T>
+    using mat_4x4 = basic_mat<T, 4, 4>;
+
+    using mat_4x4i = mat_4x4<int>;
+    using mat_4x4f = mat_4x4<float>;
+    using mat_4x4d = mat_4x4<double>;
+
+} // namespace gold::inline preview::math::linalg
+
+//// linalg::basic_vec
+namespace gold::inline preview::math::linalg {
+
+    /// linalg::basic_vec
+    template <typename T, std::size_t N>
+        requires __linalg::numeric_element<T> &&
+                 __linalg::valid_size_for_vec<N>
+    class basic_vec {
+      private:
+        using StorageType =
+            gold::mdarray<T, std::extents<std::size_t, N>>;
+
+        static constexpr __linalg::storage_mode Store =
+            N == std::dynamic_extent ?
+            __linalg::storage_mode::store_dynamic :
+            __linalg::storage_mode::store_static;
+
+        // data member
+        StorageType m_base_;
+
+        // make them usable as range
+        constexpr auto mf_as_span_() -> std::span<T>
+        { return std::span<T>(m_base_.container_data(), m_base_.container_size()); }
+
+        constexpr auto mf_as_span_() const -> std::span<const T>
+        { return std::span<const T>(m_base_.container_data(), m_base_.container_size()); }
+
+      public:
+        //// member types
+        using value_type      = std::remove_cv_t<T>;
+        using reference       = T&;
+        using const_reference = const T&;
+
+        //// constructors
+        /// for all statics
+        constexpr basic_vec() noexcept
+            requires (Store == __linalg::storage_mode::store_static)
+        : basic_vec (inplace_static_fill, 0) {}
+
+        template <typename... Elements>
+            requires (Store == __linalg::storage_mode::store_static) &&
+                     (N == sizeof...(Elements) && sizeof...(Elements) > 0)
+        constexpr basic_vec(Elements... elems) noexcept
+        : m_base_(typename StorageType::extents_type {},
+                  typename StorageType::container_type { elems ... }) {}
+
+        // deleted ctor. (mismatch size)
+        template <typename... Elements>
+            requires (Store == __linalg::storage_mode::store_static) &&
+                     (N != sizeof...(Elements) && sizeof...(Elements) > 0)
+        constexpr basic_vec(Elements... elems) = delete ("mismatched vector size");
+
+        template <typename Element = T>
+            requires (Store == __linalg::storage_mode::store_static)
+        constexpr basic_vec(inplace_static_fill_t, const Element& fill_value) noexcept
+        : m_base_(typename StorageType::extents_type {}, static_cast<T>(fill_value)) {}
+
+        /// for all dynamics
+        constexpr basic_vec()
+            requires (Store == __linalg::storage_mode::store_dynamic)
+        = delete;
+
+        template <typename... Elements>
+            requires (Store == __linalg::storage_mode::store_dynamic) &&
+                     (sizeof...(Elements) > 0)
+        constexpr basic_vec(Elements... elems)
+        : m_base_ (typename StorageType::extents_type { sizeof...(elems) },
+                   typename StorageType::container_type { elems ... } ) {}
+
+        constexpr basic_vec(inplace_dynamic_fill_t, std::size_t n)
+            requires (Store == __linalg::storage_mode::store_dynamic)
+        : m_base_ (typename StorageType::extents_type { n },
+                   typename StorageType::container_type (n)) { /* pre: n != 0 */ }
+
+        template <typename Element = T>
+            requires (Store == __linalg::storage_mode::store_dynamic)
+        constexpr basic_vec(inplace_dynamic_fill_t, std::size_t n, const Element& fill_value)
+        : m_base_ (typename StorageType::extents_type { n },
+                   typename StorageType::container_type (n, static_cast<T>(fill_value))) { /* pre: n != 0 */ }
+
+        /// conversion from all-static to all-dynamic vector
+        template <std::size_t P, typename U = T>
+            requires (basic_vec<U, P>::Store == __linalg::storage_mode::store_static) &&
+                     (Store == __linalg::storage_mode::store_dynamic) &&
+                      std::convertible_to<U, T>
+        constexpr basic_vec(const basic_vec<U, P>& other)
+        : basic_vec(inplace_dynamic_fill, other.size()) {
+            auto source_span = other.mf_as_span_();
+            auto target_span = mf_as_span_();
+            __algo::copy(source_span, target_span.data());
+        }
+
+        /// conversion from all-dynamic to all-static vector [deleted]
+        template <std::size_t P, typename U = T>
+            requires (basic_vec<U, P>::Store == __linalg::storage_mode::store_dynamic) &&
+                     (Store == __linalg::storage_mode::store_static)
+        basic_vec(const basic_vec<U, P>&)
+        = delete;
+
+        /// defaulted copy ctor. and assignments
+        basic_vec(const basic_vec&) = default;
+        basic_vec& operator=(const basic_vec&) = default;
+
+        //// observers & accessors
+        /// static_size
+        static consteval std::size_t static_size()
+        { return N; }
+
+        /// size
+        constexpr std::size_t size() const
+        { return m_base_.extent(0); }
+
+        /// operator[]
+        constexpr decltype(auto) operator[](this auto& self, std::size_t i)
+        { return self.m_base_[i]; }
+
+        /// get_mdspan
+        constexpr auto get_mdspan() -> StorageType::mdspan_type
+        { return m_base_.to_mdspan(); }
+
+        constexpr auto get_mdspan() const -> StorageType::const_mdspan_type
+        { return m_base_.to_mdspan(); }
+
+        /// conversion to another type
+        template <std::convertible_to<T> U>
+        constexpr explicit operator basic_vec<U, N>(this const basic_vec& self) {
+            basic_vec<U, N> result = [&] {
+                if constexpr (Store == __linalg::storage_mode::store_dynamic)
+                    return basic_vec<U, N>(inplace_dynamic_fill, self.size());
+                else
+                    return basic_vec<U, N>();
+            };
+            for (std::size_t i = 0; i < result.size(); ++i)
+                result[i] = static_cast<U>(self[i]);
+            return result;
+        }
+
+        //// operations
+        /// adding & subtracting vectors
+        // TODO: optimize
+        constexpr basic_vec& operator+=(this basic_vec& self, const basic_vec& other) {
+            // assume: self.size() == other.size()
+            for (std::size_t i = 0; i < self.size(); ++i)
+                self[i] += other[i];
+            return self;
+        }
+
+        friend constexpr basic_vec operator+(basic_vec lhs, const basic_vec& rhs) {
+            lhs += rhs;
+            return lhs;
+        }
+
+        constexpr basic_vec& operator-=(this basic_vec& self, const basic_vec& other) {
+            self += -other;
+            return self;
+        }
+
+        friend constexpr basic_vec operator-(basic_vec lhs, const basic_vec& rhs) {
+            lhs -= rhs;
+            return lhs;
+        }
+
+        /// scaling vectors
+        constexpr basic_vec& operator*=(this basic_vec& self, const T& scale_factor) {
+            for (std::size_t i = 0; i < self.size(); ++i)
+                self[i] *= scale_factor;
+            return self;
+        }
+
+        friend constexpr basic_vec operator*(basic_vec lhs, const T& scale_factor) {
+            lhs *= scale_factor;
+            return lhs;
+        }
+
+        friend constexpr basic_vec operator*(const T& scale_factor, basic_vec rhs) {
+            return rhs * scale_factor;
+        }
+
+        /// negating a vector
+        friend constexpr basic_vec operator-(basic_vec op) {
+            for (std::size_t i = 0; i < op.size(); ++i)
+                op[i] *= -1;
+            return op;
+        }
+
+        /// dot
+        // TODO: optimize
+        // computes dot product
+        constexpr T dot(this const basic_vec& lhs, const basic_vec& rhs) {
+            // assume: self.size() == other.size()
+            T result = 0;
+            for (std::size_t i = 0; i < lhs.size(); ++i)
+                result += lhs[i] * rhs[i];
+            return result;
+        }
+
+        /// cross
+        // computes cross product
+        constexpr basic_vec cross(this const basic_vec& lhs, const basic_vec& rhs)
+            requires (Store == __linalg::storage_mode::store_static ? N == 3 : true)
+        {
+            // assume: lhs.size() == 3 && rhs.size() == 3
+            basic_vec result = [&] {
+                if constexpr (N == 3)
+                    return basic_vec ();
+                else
+                    return basic_vec (inplace_dynamic_fill, 3);
+            }();
+            result[0] = lhs[1] * rhs[2] - lhs[2] * rhs[1];
+            result[1] = lhs[2] * rhs[0] - lhs[0] * rhs[2];
+            result[2] = lhs[0] * rhs[1] - lhs[1] * rhs[0];
+            return result;
+        }
+
+        /// norm
+        // computes Euclidean norm - root of the sum of squares
+        constexpr T norm(this const basic_vec& op) {
+            T sum = 0;
+            for (std::size_t i = 0; i < op.size(); ++i)
+                sum += op[i] * op[i];
+            return static_cast<T>(std::sqrt(sum));
+        }
+    };
+
+    template <typename T, typename... Ts>
+        requires (std::is_convertible_v<Ts, T> && ...)
+    basic_vec(T, Ts...) -> basic_vec<T, 1 + sizeof...(Ts)>;
+
+    /// add
+    template <typename T, typename U, std::size_t N>
+    constexpr basic_vec<std::common_type_t<T, U>, N>
+    add(const basic_vec<T, N>& lhs, const basic_vec<U, N>& rhs)
+    {
+        using R    = std::common_type_t<T, U>;
+        using VecR = basic_vec<R, N>;
+        return static_cast<VecR>(lhs) + static_cast<VecR>(rhs);
+    }
+
+    /// dot
+    template <typename T, typename U, std::size_t N>
+    constexpr std::common_type_t<T, U>
+    dot(const basic_vec<T, N>& lhs, const basic_vec<U, N>& rhs)
+    {
+        using R    = std::common_type_t<T, U>;
+        using VecR = basic_vec<R, N>;
+        return static_cast<VecR>(lhs).dot(static_cast<VecR>(rhs));
+    }
+
+    /// cross
+    template <typename T, typename U, std::size_t N>
+        requires (N == 3 || N == std::dynamic_extent)
+    constexpr basic_vec<std::common_type_t<T, U>, N>
+    cross(const basic_vec<T, N>& lhs, const basic_vec<U, N>& rhs)
+    {
+        using R    = std::common_type_t<T, U>;
+        using VecR = basic_vec<R, N>;
+        return static_cast<VecR>(lhs).cross(static_cast<VecR>(rhs));
+    }
+
+    /// scale
+    template <typename T, typename U, std::size_t N>
+    constexpr basic_vec<std::common_type_t<T, U>, N>
+    scale(const basic_vec<T, N>& lhs, const U& scalar)
+    {
+        using R    = std::common_type_t<T, U>;
+        using VecR = basic_vec<R, N>;
+        return static_cast<VecR>(lhs) * static_cast<R>(scalar);
+    }
+
+} // namespace gold::inline preview::math::linalg
+
+//// linalg::basic_mat
+namespace gold::inline preview::math::linalg {
+
+    /// linalg::basic_mat
+    template <typename T, std::size_t R, std::size_t C>
+        requires __linalg::numeric_element<T> &&
+                 __linalg::valid_size_for_mat<R, C>
+    class basic_mat {
+      private:
+        using StorageType =
+            gold::mdarray<T, std::extents<std::size_t, R, C>>;
+
+        static constexpr __linalg::storage_mode Store =
+            (R == std::dynamic_extent && C == std::dynamic_extent) ?
+            __linalg::storage_mode::store_dynamic :
+            __linalg::storage_mode::store_static;
+
+        // data member
+        StorageType m_base_;
+
+        // make them usable as range
+        constexpr auto mf_as_span_() -> std::span<T>
+        { return std::span<T>(m_base_.container_data(), m_base_.container_size()); }
+
+        constexpr auto mf_as_span_() const -> std::span<const T>
+        { return std::span<const T>(m_base_.container_data(), m_base_.container_size()); }
+
+        // flattens 2-D mdspan into 1-D mdspan
+        constexpr auto mf_flatten_to_mdspan_(this auto& self) {
+            const auto sp = self.mf_as_span_();
+            return std::mdspan(sp.data(), std::extents(sp.size()));
+        }
+
+        // accesses diagonal entries of the matrix
+        constexpr auto mf_diagonals_(this auto& self) {
+            const auto slice = std::strided_slice (0, self.size(), self.column_size() + 1);
+            return std::submdspan(self.mf_flatten_to_mdspan_(), slice);
+        }
+
+      public:
+        //// member types
+        using value_type      = std::remove_cv_t<T>;
+        using reference       = T&;
+        using const_reference = const T&;
+
+        //// constructors
+        /// for all statics
+        constexpr basic_mat() noexcept
+            requires (Store == __linalg::storage_mode::store_static)
+        : basic_mat (inplace_static_fill, 0) {}
+
+        // assigns entries in row-major order
+        template <typename... Elements>
+            requires (Store == __linalg::storage_mode::store_static) &&
+                     (R * C == sizeof...(Elements) && sizeof...(Elements) > 0)
+        constexpr basic_mat(Elements... elems) noexcept
+        : m_base_(typename StorageType::extents_type {},
+                  typename StorageType::container_type { elems ... }) {}
+
+        template <typename... Elements>
+            requires (Store == __linalg::storage_mode::store_static) &&
+                     (R * C != sizeof...(Elements) && sizeof...(Elements) > 0)
+        constexpr basic_mat(Elements... elems) = delete ("mismatched matrix size");
+
+        template <typename Element = T>
+            requires (Store == __linalg::storage_mode::store_static)
+        constexpr basic_mat(inplace_static_fill_t, const Element& fill_value) noexcept
+        : m_base_(typename StorageType::extents_type {}, static_cast<T>(fill_value)) {}
+
+        /// for all dynamics
+        basic_mat()
+            requires (Store == __linalg::storage_mode::store_dynamic)
+        = delete;
+
+        // cannot construct elements without
+        // knowing the shape of matrix (rows and columns)
+        // ...
+
+        constexpr basic_mat(inplace_dynamic_fill_t, std::size_t r, std::size_t c)
+            requires (Store == __linalg::storage_mode::store_dynamic)
+        : m_base_ (typename StorageType::extents_type { r, c },
+                   typename StorageType::container_type (r * c)) { /* pre: n != 0 */ }
+
+        template <typename Element = T>
+            requires (Store == __linalg::storage_mode::store_dynamic)
+        constexpr basic_mat(inplace_dynamic_fill_t, std::size_t r, std::size_t c, const Element& fill_value)
+        : m_base_ (typename StorageType::extents_type { r, c },
+                   typename StorageType::container_type (r * c, static_cast<T>(fill_value))) { /* pre: n != 0 */ }
+
+        /// conversion from all-static to all-dynamic matrix (constexpr-sized erasure)
+        template <std::size_t P, std::size_t Q, typename U = T>
+            requires (basic_mat<U, P, Q>::Store == __linalg::storage_mode::store_static) &&
+                     (Store == __linalg::storage_mode::store_dynamic) &&
+                     std::convertible_to<T, U>
+        constexpr basic_mat(const basic_mat<U, P, Q>& other)
+        : basic_mat(inplace_dynamic_fill, other.row_size(), other.column_size()) {
+            // copy elements by elements
+            auto source_span = other.mf_as_span_();
+            auto target_span = mf_as_span_();
+            __algo::copy(source_span, target_span.data());
+        }
+
+        /// conversion from all-dynamic to all-static matrix [deleted]
+        template <std::size_t P, std::size_t Q, typename U = T>
+            requires (basic_mat<U, P, Q>::Store == __linalg::storage_mode::store_dynamic) &&
+                     (Store == __linalg::storage_mode::store_static)
+        basic_mat(const basic_mat<U, P, Q>&)
+        = delete;
+
+        /// defaulted copy ctor. and assignments
+        basic_mat(const basic_mat&) = default;
+        basic_mat& operator=(const basic_mat&) = default;
+
+        /// is_always_square
+        static consteval bool is_always_square()
+        { return Store == __linalg::storage_mode::store_dynamic ? false : R == C; }
+
+        //// factory functions
+        /// ::identity
+        // creates identity matrix (only for square matrices)
+        static consteval basic_mat identity() noexcept
+            requires (basic_mat::is_always_square())
+        {
+            basic_mat result {};
+            auto diagonals = result.mf_diagonals_();
+            for (std::size_t i = 0; i < diagonals.extent(0); ++i)
+                diagonals[i] = T(1);
+            return result;
+        }
+
+        //// observers & accessors
+        /// static_size
+        static consteval std::size_t static_size()
+        { return Store == __linalg::storage_mode::store_dynamic ? std::dynamic_extent : R * C; }
+
+        /// static_row_size
+        static consteval std::size_t static_row_size()
+        { return R; }
+
+        /// static_column_size
+        static consteval std::size_t static_column_size()
+        { return C; }
+
+        /// size
+        constexpr std::size_t size() const
+        { return m_base_.extent(0) * m_base_.extent(1); }
+
+        /// row_size
+        constexpr std::size_t row_size() const
+        { return m_base_.extent(0); }
+
+        /// column_size
+        constexpr std::size_t column_size() const
+        { return m_base_.extent(1); }
+
+        /// operator[]
+        constexpr decltype(auto) operator[](this auto& self, std::size_t i, std::size_t j)
+        { return self.m_base_[i, j]; }
+
+        /// get_mdspan
+        constexpr auto get_mdspan() -> StorageType::mdspan_type
+        { return m_base_.to_mdspan(); }
+
+        constexpr auto get_mdspan() const -> StorageType::const_mdspan_type
+        { return m_base_.to_mdspan(); }
+
+        /// conversion to another type
+        template <std::convertible_to<T> U>
+        constexpr explicit operator basic_mat<U, R, C>(this const basic_mat& self) {
+            basic_mat<U, R, C> result = [&] {
+                if constexpr (Store == __linalg::storage_mode::store_dynamic)
+                    return basic_mat<U, R, C>(inplace_dynamic_fill, self.row_size(), self.column_size());
+                else
+                    return basic_mat<U, R, C>();
+            };
+            for (std::size_t i = 0; i < result.size(); ++i)
+                result.mf_as_span_()[i] = static_cast<U>(self.mf_as_span_()[i]);
+            return result;
+        }
+
+        //// operations
+        // TODO: optimize
+        constexpr basic_mat& operator+=(this basic_mat& self, const basic_mat& other) {
+            // assume: self.size() == other.size()
+            auto self_span  = self.mf_as_span_();
+            auto other_span = other.mf_as_span_();
+            for (std::size_t i = 0; i < self.size(); ++i)
+                self_span[i] += other_span[i];
+            return self;
+        }
+
+        friend constexpr basic_mat operator+(basic_mat lhs, const basic_mat& rhs) {
+            lhs += rhs;
+            return lhs;
+        }
+
+        constexpr basic_mat& operator-=(this basic_mat& self, const basic_mat& other) {
+            self += -other;
+            return self;
+        }
+
+        friend constexpr basic_mat operator-(basic_mat lhs, const basic_mat& rhs) {
+            lhs -= rhs;
+            return lhs;
+        }
+
+        constexpr basic_mat& operator*=(this basic_mat& self, const T& scale_factor) {
+            auto self_span  = self.mf_as_span_();
+            for (std::size_t i = 0; i < self.size(); ++i)
+                self_span[i] *= scale_factor;
+            return self;
+        }
+
+        friend constexpr basic_mat operator*(basic_mat lhs, const T& scale_factor) {
+            lhs *= scale_factor;
+            return lhs;
+        }
+
+        friend constexpr basic_mat operator*(const T& scale_factor, basic_mat rhs) {
+            return rhs * scale_factor;
+        }
+
+        /// matrix-matrix multiplication
+        // for all-statics only (as of now)
+        template <std::size_t P>
+        friend constexpr basic_mat<T, R, P> operator*(basic_mat lhs, basic_mat<T, C, P> rhs)
+            requires (Store == __linalg::storage_mode::store_static) &&
+                     (basic_mat<T, R, P>::Store == __linalg::storage_mode::store_static)
+        {
+            // TODO: apply Strassen algorithm
+            basic_mat<T, R, P> result {};
+            for (std::size_t i = 0; i < lhs.row_size(); ++i)
+                for (std::size_t j = 0; j < rhs.column_size(); ++j)
+                    for (std::size_t k = 0; k < lhs.column_size(); ++k) // use either lhs.column_size() or rhs.row_size()
+                        result[i, j] += lhs[i, k] * rhs[k, j];
+            return result;
+        }
+
+        // for all dynamics
+        friend constexpr basic_mat operator*(basic_mat lhs, basic_mat rhs)
+            requires (Store == __linalg::storage_mode::store_dynamic)
+        {
+            // assert: lhs.column_size() == rhs.row_size()
+            basic_mat result {inplace_dynamic_fill, lhs.row_size(), rhs.column_size()};
+            for (std::size_t i = 0; i < lhs.row_size(); ++i)
+                for (std::size_t j = 0; j < rhs.column_size(); ++j)
+                    for (std::size_t k = 0; k < lhs.column_size(); ++k) // use either lhs.column_size() or rhs.row_size()
+                        result[i, j] += lhs[i, k] * rhs[k, j];
+            return result;
+        }
+
+        constexpr basic_mat& operator*=(basic_mat rhs)
+            requires (basic_mat::is_always_square() || Store == __linalg::storage_mode::store_dynamic)
+        { return *this = *this * rhs; }
+
+        /// matrix-vector multiplication
+        // for all static
+        friend constexpr basic_vec<T, R> operator*(basic_mat lhs, basic_vec<T, C> rhs)
+            requires (Store == __linalg::storage_mode::store_static)
+        {
+            basic_vec<T, R> result {};
+            for (std::size_t i = 0; i < R; ++i)
+                for (std::size_t k = 0; k < C; ++k)
+                    result[i] += lhs[i, k] * rhs[k];
+            return result;
+        }
+
+        // for all dynamic
+        friend constexpr basic_vec<T> operator*(basic_mat lhs, basic_vec<T> rhs)
+            requires (Store == __linalg::storage_mode::store_dynamic)
+        {
+            // assert: lhs.column_size() == rhs.size()
+            basic_vec<T> result {inplace_dynamic_fill, lhs.row_size()};
+            for (std::size_t i = 0; i < lhs.row_size(); ++i)
+                for (std::size_t k = 0; k < lhs.column_size(); ++k)
+                    result[i] += lhs[i, k] * rhs[k];
+            return result;
+        }
+
+        friend constexpr basic_mat operator-(basic_mat op) {
+            auto op_span = op.mf_as_span_();
+            for (std::size_t i = 0; i < op.size(); ++i)
+                op_span[i] *= -1;
+            return op;
+        }
+
+        // only comparable when they have the same size
+        friend constexpr bool operator==(const basic_mat& lhs, const basic_mat& rhs)
+        { return gold::equal_mdspan(lhs.get_mdspan(), rhs.get_mdspan()); }
+
+        /// is_square
+        constexpr bool is_square() const
+        { return m_base_.extent(0) == m_base_.extent(1); }
+
+        /// is_triangular
+        constexpr bool is_triangular() const {
+            if (!is_square())
+                return false;
+            return is_diagonal()
+                || is_upper_triangular()
+                || is_lower_triangular();
+        }
+
+        /// is_upper_triangular
+        constexpr bool is_upper_triangular() const {
+            if (!is_square())
+                return false;
+            for (std::size_t i = 0; i < m_base_.extent(0); ++i)
+                for (std::size_t j = 0; j < m_base_.extent(1); ++j)
+                    if (i > j && m_base_[i, j] != value_type(0))
+                        return false;
+            return true;
+        }
+
+        /// is_lower_triangular
+        constexpr bool is_lower_triangular() const {
+            if (!is_square())
+                return false;
+            for (std::size_t i = 0; i < m_base_.extent(0); ++i)
+                for (std::size_t j = 0; j < m_base_.extent(1); ++j)
+                    if (i < j && m_base_[i, j] != value_type(0))
+                        return false;
+            return true;
+        }
+
+        /// is_identity
+        constexpr bool is_identity() const {
+            if (!is_square() || !is_diagonal())
+                return false;
+            auto diagonals = mf_diagonals_();
+            for (std::size_t i = 0; i < diagonals.extent(0); ++i)
+                if (diagonals[i] != value_type(1))
+                    return false;
+            return true;
+        }
+
+        /// is_diagonal
+        constexpr bool is_diagonal() const {
+            for (std::size_t i = 0; i < m_base_.extent(0); ++i)
+                for (std::size_t j = 0; j < m_base_.extent(1); ++j)
+                    if (i != j && m_base_[i, j] != value_type(0))
+                        return false;
+            return true;
+        }
+
+        /// is_symmetric
+        constexpr bool is_symmetric() const {
+            if constexpr (!basic_mat::is_always_square() && Store == __linalg::storage_mode::store_static)
+                return false;
+            else {
+                const auto& self = *this;
+                const std::size_t r = self.row_size();
+                const std::size_t c = self.column_size();
+                if (r != c)
+                    return false;
+                // return *this == transposed() but 'transposed()' returns a new copy which is costly
+                for (std::size_t i = 0; i < r; ++i)
+                    for (std::size_t j = 0; j < r; ++j)
+                        if (self[i, j] != self[j, i])
+                            return false;
+                return true;
+            }
+        }
+
+        /// is_zero
+        constexpr bool is_zero() const {
+            for (const_reference elem : mf_as_span_())
+                if (elem != value_type(0))
+                    return false;
+            return true;
+        }
+
+        /// is_similar [TODO]
+        /// is_diagonalizable [TODO]
+        /// is_triangularizable [TODO]
+
+        /// set_applied_each
+        // applies the function to each entry and modifies in-place
+        // todo: constrain the function
+        template <typename F>
+        constexpr basic_mat& set_applied_each(F&& f) {
+            auto op_span = mf_as_span_();
+            for (auto& entry : op_span)
+                entry = std::forward<F>(f)(entry);
+            return *this;
+        }
+
+        /// applied_each
+        // returns the copy of the application of each entry
+        template <typename F>
+        constexpr basic_mat applied_each(F&& f) const {
+            // TODO: optimize
+            basic_mat new_copy = *this;
+            for (auto& entry : new_copy.mf_as_span_())
+                entry = std::forward<F>(f)(entry);
+            return new_copy;
+        }
+
+        /// set_transposed
+        // applies transposition to matrix in-place
+//        constexpr basic_mat& set_transposed() noexcept
+//            requires (basic_mat::is_always_square() || Store == __linalg::storage_mode::store_dynamic)
+//        {
+//            if constexpr (basic_mat::is_always_square()) {
+//                auto& self = *this;
+//                for (std::size_t i = 0; i < self.row_size(); ++i)
+//                    for (std::size_t j = 0; j < self.column_size(); ++j)
+//                        std::ranges::swap(self[i, j], self[j, i]);
+//            } else {
+//                if (is_square()) {
+//                    auto& self = *this;
+//                    for (std::size_t i = 0; i < self.row_size(); ++i)
+//                        for (std::size_t j = 0; j < self.column_size(); ++j)
+//                            std::ranges::swap(self[i, j], self[j, i]);
+//                } else {
+//
+//                }
+//            }
+//            return *this;
+//        }
+
+        /// transposed
+        // returns a new copy of the transposed matrix
+        constexpr basic_mat<T, C, R> transposed() const noexcept
+        {
+            const auto& self = *this;
+            basic_mat<T, C, R> result = [&] {
+                if constexpr (Store == __linalg::storage_mode::store_dynamic)
+                    return basic_mat<T, C, R> {inplace_dynamic_fill, self.column_size(), self.row_size()};
+                else
+                    return basic_mat<T, C, R> {};
+            }();
+            for (std::size_t i = 0; i < self.row_size(); ++i)
+                for (std::size_t j = 0; j < self.column_size(); ++j)
+                    result[j, i] = self[i, j];
+            return result;
+        }
+
+        /// inversed [TODO]
+        /// set_inversed [TODO]
+
+        /// determinant
+        // specialized algorithms for determinants
+        constexpr value_type determinant() const noexcept
+            requires (basic_mat::is_always_square() || Store == __linalg::storage_mode::store_dynamic)
+        {
+            if constexpr (static_column_size() == 1 &&
+                          static_row_size()    == 1)
+                return m_base_[0, 0];
+            if constexpr (static_column_size() == 2 &&
+                          static_row_size()    == 2)
+                return m_base_[0, 0] * m_base_[1, 1]
+                     - m_base_[0, 1] * m_base_[1, 0];
+            else if constexpr (static_column_size() == 3 &&
+                               static_row_size()    == 3)
+                return m_base_[0, 0] * m_base_[1, 1] * m_base_[2, 2]
+                     + m_base_[0, 1] * m_base_[1, 2] * m_base_[2, 0]
+                     + m_base_[0, 2] * m_base_[1, 0] * m_base_[2, 1]
+                     - m_base_[0, 2] * m_base_[1, 1] * m_base_[2, 0]
+                     - m_base_[0, 1] * m_base_[1, 0] * m_base_[2, 2]
+                     - m_base_[0, 0] * m_base_[1, 2] * m_base_[2, 1];
+            else
+                static_assert(false, "unimplemented, wait...");
+        }
+
+        /// trace
+        constexpr value_type trace() const noexcept
+            requires (basic_mat::is_always_square() || Store == __linalg::storage_mode::store_dynamic)
+        {
+            // assume: the matrix is square
+            value_type result {};
+            const auto diagonals = mf_diagonals_();
+            for (std::size_t i = 0; i < diagonals.extent(0); ++i)
+                result += diagonals[i];
+            return result;
+        }
+    };
+
+} // namespace gold::inline preview::math::linalg
+
+#endif // __GOLD_PREVIEW_LINALG

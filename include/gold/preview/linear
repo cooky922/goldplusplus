@@ -1,0 +1,42 @@
+// <gold/preview/linear> - gold++ library
+
+// Copyright (C) 2021 - present Desmond Gold
+
+// note: this is only a prototype
+
+#pragma once
+#ifndef __GOLD_PREVIEW_LINEAR
+#define __GOLD_PREVIEW_LINEAR
+
+#include <gold/concepts>
+
+namespace gold::preview {
+
+    /// scalar
+    template <gold::qualified_numeric T>
+    class scalar;
+
+    /// vector
+    template <gold::qualified_numeric T>
+    class vector;
+
+    /// fixed_vector
+    template <gold::qualified_numeric T, std::size_t N>
+    class fixed_vector;
+
+    /// matrix
+    template <gold::qualified_numeric T>
+    class matrix;
+
+    /// fixed_matrix
+    template <
+        gold::qualified_numeric T,
+        std::size_t M,
+        std::size_t N
+    >
+    class fixed_matrix;
+
+
+} // namespace gold::preview
+
+#endif // __GOLD_PREVIEW_LINEAR

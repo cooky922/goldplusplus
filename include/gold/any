@@ -1,0 +1,32 @@
+// <gold/any> - gold++ library
+
+// Copyright (C) [ 2021 - 2024 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_ANY
+#define __GOLD_ANY
+
+#include <gold/bits/any/fwd.hpp>
+#include <gold/bits/any/bad_any_access.hpp>
+#include <gold/bits/any/cpo.hpp>
+#include <gold/bits/any/storage.hpp>
+#include <gold/bits/any/manager.hpp>
+#include <gold/bits/any/view_any.hpp>
+#include <gold/bits/any/any.hpp>
+#include <gold/bits/any/unique_any.hpp>
+
+namespace gold {
+
+    /// bad_any_access
+    /// in_place_viewable[_t]
+    /// view_any
+    /// any
+    /// make_any
+    /// unique_any
+    /// make_unique_any
+    /// holds_current_type
+    /// any_cast
+
+} // namespace gold
+
+#endif // __GOLD_ANY

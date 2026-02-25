@@ -1,0 +1,67 @@
+// <gold/text_encoding> - gold++ library
+
+// Copyright (C) [ 2021 - 2025 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_TEXT_ENCODING
+#define __GOLD_TEXT_ENCODING
+
+#define _GLIBCXX_USE_NL_LANGINFO_L 1
+#include <text_encoding>
+#undef _GLIBCXX_USE_NL_LANGINFO_L
+
+namespace gold {
+
+    /// text_encoding
+    class text_encoding {
+      private:
+        std::text_encoding m_enc_ {};
+
+      public:
+        using id = std::text_encoding::id;
+        using aliases_view = std::text_encoding::aliases_view;
+
+        using enum id;
+
+        constexpr text_encoding() = default;
+        constexpr text_encoding(const text_encoding&) = default;
+
+        constexpr explicit text_encoding(std::string_view enc) noexcept
+        : m_enc_(enc) {}
+
+        constexpr text_encoding(id i) noexcept
+        : m_enc_(i) {}
+
+        //// creation
+        static consteval text_encoding literal() noexcept {
+            text_encoding result {};
+            result.m_enc_ = std::text_encoding::literal();
+            return result;
+        }
+
+        static consteval text_encoding wide_literal() noexcept {
+            return text_encoding(__GNUC_WIDE_EXECUTION_CHARSET_NAME);
+        }
+
+        static text_encoding environment();
+
+        template <id I>
+        static bool environment_is() {
+            return environment() == I;
+        }
+
+        //// accessors
+        constexpr id mib() const noexcept { return m_enc_.mib(); }
+        constexpr const char* name() const noexcept { return m_enc_.name(); }
+        constexpr aliases_view aliases() const noexcept { return m_enc_.aliases(); }
+
+        friend constexpr bool operator==(const text_encoding& lhs, const text_encoding& rhs) noexcept = default;
+        friend constexpr bool operator==(const text_encoding& lhs, id i) noexcept {
+            return lhs.m_enc_ == i;
+        }
+    };
+
+} // namespace gold
+
+#endif // __GOLD_TEXT_ENCODING
+

@@ -1,0 +1,135 @@
+// <gold/stopwatch> - gold++ library
+
+// Copyright (C) [ 2021 - 2024 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_STOPWATCH
+#define __GOLD_STOPWATCH
+
+#include <chrono>
+
+namespace gold {
+
+    namespace __chrono {
+
+        /// __chrono::stopwatch_launch
+        enum class stopwatch_launch : bool {
+            start_defer,
+            start_eager,
+            start_default = start_eager
+        };
+
+    } // namespace __chrono
+
+    /// basic_stopwatch
+    template <typename Clock>
+    class basic_stopwatch {
+      public:
+        using clock_type = Clock;
+        using time_point = Clock::time_point;
+        using duration   = Clock::duration;
+        using enum __chrono::stopwatch_launch;
+
+      private:
+        // time of last reset
+        // - if empty state -> hasn't started yet
+        time_point m_ref_point_ {};
+
+        // time of last stop
+        // - if empty state -> is currently running
+        time_point m_stop_point_ {};
+
+        // valid values:
+        // has_started() && is_running()
+        // has_started() && !is_running()
+        // !has_started() && !is_running()
+
+        // invalid value:
+        // !has_started() && is_running()
+
+      public:
+        basic_stopwatch(__chrono::stopwatch_launch launch) noexcept {
+            if (launch == __chrono::stopwatch_launch::start_eager)
+                m_ref_point_ = clock_type::now();
+        }
+
+        basic_stopwatch() noexcept
+        : basic_stopwatch(__chrono::stopwatch_launch::start_default) {}
+
+        // Stopwatch is neither copyable nor movable
+        basic_stopwatch(const basic_stopwatch&) = delete;
+        basic_stopwatch& operator=(const basic_stopwatch&) = delete;
+
+        // Observers
+        bool is_running() const noexcept
+        { return has_started() && m_stop_point_ == time_point(); }
+
+        bool has_started() const noexcept
+        { return m_ref_point_ != time_point(); }
+
+        duration elapsed() const noexcept {
+            if (is_running())
+                return clock_type::now() - m_ref_point_;
+            return m_stop_point_ - m_ref_point_;
+        }
+
+        // Operations
+        void start() noexcept {
+            if (!has_started()) {
+                m_ref_point_ = clock_type::now();
+            } else if (!is_running()) {
+                m_ref_point_ += clock_type::now() - m_stop_point_;
+                m_stop_point_ = {};
+            }
+            // post condition: has_started() == true &&
+            //                 is_running()  == true
+        }
+
+        void resume() noexcept {
+            // pre: has_started() && !is_running()
+            if (has_started() && !is_running()) {
+                m_ref_point_ += clock_type::now() - m_stop_point_;
+                m_stop_point_ = {};
+            }
+        }
+
+        void stop() noexcept {
+            if (is_running())
+                m_stop_point_ = clock_type::now();
+            // post condition: is_running() == false
+        }
+
+        // pause() same as stop()
+
+        duration restart() noexcept {
+            const duration elapsed_time = elapsed();
+            m_ref_point_  = clock_type::now();
+            m_stop_point_ = {};
+            return elapsed_time;
+
+            // post condition: has_started() == true &&
+            //                 is_running()  == true
+
+            // equivalent to:
+            // const duration elapsed_time = reset();
+            // start();
+            // return elapsed_time;
+        }
+
+        duration reset() noexcept {
+            const duration elapsed_time = elapsed();
+            m_ref_point_  = {};
+            m_stop_point_ = {};
+            return elapsed_time;
+
+            // post condition: has_started() == false &&
+            //                 is_running() == false
+        }
+    };
+
+    /// stopwatch
+    using stopwatch = basic_stopwatch<std::chrono::high_resolution_clock>;
+
+} // namespace gold
+
+#endif // __GOLD_STOPWATCH

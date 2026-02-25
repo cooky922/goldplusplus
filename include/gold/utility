@@ -1,0 +1,55 @@
+// <gold/utility> - gold++ library
+
+// Copyright (C) [ 2021 - 2025 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_UTILITY
+#define __GOLD_UTILITY
+
+#include <utility>
+#include <concepts>
+#include <gold/basic_types>
+#include <gold/bits/assume.hpp>
+#include <gold/bits/casts.hpp>
+#include <gold/bits/discard_unused.hpp>
+#include <gold/bits/enum_ops.hpp>
+#include <gold/bits/in_place.hpp>
+#include <gold/bits/constant_arg.hpp>
+#include <gold/bits/unreachable.hpp>
+
+namespace gold {
+
+    /// basic types [ all defined in <gold/basic_types> ]
+
+    /// in_place_braced_t       [ defined in <gold/bits/in_place.hpp> ]
+    /// in_place_braced         [ defined in <gold/bits/in_place.hpp> ]
+    /// in_place_type_braced_t  [ defined in <gold/bits/in_place.hpp> ]
+    /// in_place_type_braced    [ defined in <gold/bits/in_place.hpp> ]
+    /// in_place_index_braced_t [ defined in <gold/bits/in_place.hpp> ]
+    /// in_place_index_braced   [ defined in <gold/bits/in_place.hpp> ]
+    /// in_place_value_t        [ defined in <gold/bits/in_place.hpp> ]
+    /// in_place_value          [ defined in <gold/bits/in_place.hpp> ]
+    /// in_place_value_braced_t [ defined in <gold/bits/in_place.hpp> ]
+    /// in_place_value_braced   [ defined in <gold/bits/in_place.hpp> ]
+
+    /// enum_ops::enable_enum_ops [ defined in <gold/bits/enum_ops.hpp> ]
+    /// bitwise operators for scoped enums in namespace 'gold::enum_ops'
+
+    /// to_unsigned                 [ defined in <gold/bits/casts.hpp> ]
+    /// to_signed                   [ defined in <gold/bits/casts.hpp> ]
+    /// as_consteval                [ defined in <gold/bits/casts.hpp> ]
+    /// as_const                    [ defined in <gold/bits/casts.hpp> ]
+    /// as_mutable  [ be careful! ] [ defined in <gold/bits/casts.hpp> ]
+    /// decay_copy                  [ defined in <gold/bits/casts.hpp> ]
+    /// decay_move                  [ defined in <gold/bits/casts.hpp> ]
+
+    /// constant_arg[_t]            [ defined in <gold/bits/constant_arg.hpp> ]
+
+    /// discard_unused              [ defined in <gold/bits/discard_unused.hpp> ]
+
+    /// unreachable                 [ defined in <gold/bits/unreachable.hpp> ]
+    /// assume                      [ defined in <gold/bits/assume.hpp ]
+
+} // namespace gold
+
+#endif // __GOLD_UTILITY

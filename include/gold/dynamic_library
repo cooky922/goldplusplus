@@ -1,0 +1,503 @@
+// <gold/dynamic_library> - gold++ library
+
+// Copyright (C) [ 2021 - 2026 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_DYNAMIC_LIBRARY
+#define __GOLD_DYNAMIC_LIBRARY
+
+#include <string_view>
+#include <string>
+#include <utility>
+#include <expected>
+#include <stdexcept>
+
+// reference implementations:
+// + https://github.com/martin-olivier/dylib/blob/main/include/dylib.hpp
+// + https://github.com/boostorg/dll/tree/develop
+
+/// <gold/dynlib>
+// gold::dynlib_error_code
+// gold::dynlib_error
+// gold::dynlib
+// gold::dynlib::address_type
+// gold::dynlib::native_handle_type
+// gold::dynlib::symbol_type
+// gold::dynlib::symbols_view
+// gold::dynlib::loaded_libraries_view
+
+namespace gold {
+
+    namespace __dynlib {
+
+        /// __dynlib::dynlib_friend
+        struct dynlib_friend;
+
+        /// __dynlib::lang_kind_impl
+        enum class lang_kind_impl : unsigned char { unknown, c, cpp };
+
+        /// __dynlib::item_kind_impl
+        enum class item_kind_impl : unsigned char { unknown, function, variable, forwarder };
+
+    } // namespace __dynlib
+
+    /// dynlib_error_code
+    enum class dynlib_error_code {
+        none,
+        library_not_found,
+        symbol_not_found,
+        symbol_not_variable,
+        symbol_not_function,
+        load_failed,
+        invalid_format,
+        access_denied
+    };
+
+    /// dynlib_error
+    class dynlib_error : public std::runtime_error {
+      private:
+        dynlib_error_code m_code_;
+
+        static constexpr const char* sf_to_message_(dynlib_error_code code) {
+            switch (code) {
+                using enum dynlib_error_code;
+                case none: return "";
+                case library_not_found: return "library not found";
+                case symbol_not_found:  return "symbol not found";
+                case symbol_not_variable: return "symbol is not a variable";
+                case symbol_not_function: return "symbol is not a function";
+                case load_failed:       return "load failed";
+                case invalid_format:    return "invalid format";
+                case access_denied:     return "access denied";
+            }
+            __builtin_unreachable();
+        }
+
+      public:
+        dynlib_error(dynlib_error_code code)
+        : std::runtime_error(sf_to_message_(code)) {}
+
+        dynlib_error_code code() const noexcept { return m_code_; }
+    };
+
+    /// dynlib
+    // in this design, gold::dynlib
+    // - can only be constructed via static factory methods or default constructed
+    // - it is movable but not copyable
+    class dynlib {
+      public:
+        using address_type = void*;
+        using native_handle_type = void*;
+
+        // dynlib::symbol_type
+        class symbol_type;
+
+        // dynlib::symbols_view
+        class symbols_view;
+
+        // dynlib::loaded_libraries_view
+        class loaded_libraries_view;
+
+      private:
+        // gets friend access
+        friend struct __dynlib::dynlib_friend;
+
+        // special construct type to construct in private
+        enum class SpecialCtor {};
+
+        // cached data to load section headers in DLLs
+        struct CachedImpl;
+
+        // data members
+        void* m_lib_handle_ = nullptr;
+        bool  m_owned_ = false;
+        mutable CachedImpl* m_cached_ptr_ = nullptr;
+
+        // private ctor
+        constexpr dynlib(SpecialCtor, void* lib_handle, bool owned) noexcept
+        : m_lib_handle_(lib_handle), m_owned_(owned) {}
+
+      public:
+        // default constructor
+        dynlib() = default;
+        ~dynlib() { reset(); }
+
+        // deleted copy operationswq
+        dynlib(const dynlib&) = delete;
+        dynlib& operator=(const dynlib&) = delete;
+
+        // move operations
+        dynlib(dynlib&& other) noexcept
+        : m_lib_handle_(std::exchange(other.m_lib_handle_, nullptr)),
+          m_owned_(std::exchange(other.m_owned_, false)),
+          m_cached_ptr_(std::exchange(other.m_cached_ptr_, nullptr)) {}
+
+        dynlib& operator=(dynlib&& other) noexcept {
+            if (this != &other)
+                auto(std::move(other)).swap(*this);
+            return *this;
+        }
+
+        // swap operations
+        constexpr void swap(dynlib& other) noexcept {
+            std::ranges::swap(m_lib_handle_, other.m_lib_handle_);
+            std::ranges::swap(m_owned_, other.m_owned_);
+            std::ranges::swap(m_cached_ptr_, other.m_cached_ptr_);
+        }
+
+        friend constexpr void swap(dynlib& lhs, dynlib& rhs) noexcept {
+            lhs.swap(rhs);
+        }
+
+        void reset();
+
+        // factory functions
+        static dynlib unchecked_load(std::string_view) noexcept;
+        static std::expected<dynlib, dynlib_error_code> try_load(std::string_view) noexcept;
+        static dynlib load(std::string_view);
+
+        static dynlib unchecked_attach(std::string_view) noexcept;
+        static dynlib unchecked_attach(native_handle_type) noexcept;
+        static std::expected<dynlib, dynlib_error_code> try_attach(std::string_view) noexcept;
+        static dynlib attach(std::string_view);
+
+        // list of loaded libraries in the current execution
+        static bool has_already_loaded(std::string_view) noexcept;
+        static loaded_libraries_view loaded_libraries() noexcept;
+
+        // observers
+        constexpr native_handle_type native_handle() const noexcept {
+            return m_lib_handle_;
+        }
+
+        constexpr bool has_value() const noexcept {
+            return m_lib_handle_ != nullptr;
+        }
+
+        constexpr explicit operator bool() const noexcept {
+            return has_value();
+        }
+
+        address_type entrypoint_address() const noexcept;
+        std::size_t size_bytes() const noexcept;
+        std::string location_path() const;
+        std::string name() const;
+
+        // symbol extractions
+        symbol_type unchecked_extract_symbol(std::string_view) const noexcept;
+        std::expected<symbol_type, dynlib_error_code> try_extract_symbol(std::string_view) const noexcept;
+        symbol_type extract_symbol(std::string_view) const;
+
+        symbols_view extract_symbols() const noexcept;
+        bool contains_symbol(std::string_view) const noexcept;
+
+        // get variables and function directly
+        template <typename T>
+        T* unchecked_extract_variable(std::string_view name) const noexcept;
+
+        template <typename T>
+        std::expected<T*, dynlib_error_code> try_extract_variable(std::string_view) const noexcept;
+
+        template <typename T>
+        T* extract_variable(std::string_view) const;
+
+        template <typename T>
+        T* unchecked_extract_function(std::string_view) const noexcept;
+
+        template <typename T>
+        std::expected<T*, dynlib_error_code> try_extract_function(std::string_view) const noexcept;
+
+        template <typename T>
+        T* extract_function(std::string_view) const;
+    };
+
+    /// dynlib::symbol_type
+    class dynlib::symbol_type {
+      public:
+        using address_type = void*;
+
+      private:
+        friend class dynlib;
+
+        enum class SpecialCtor {};
+
+        /// dynlib::symbols_view::lang_kind_impl
+        using lang_kind_impl = __dynlib::lang_kind_impl;
+
+        /// dynlib::symbols_view::item_kind_impl
+        using item_kind_impl = __dynlib::item_kind_impl;
+
+        // data members
+        const char* m_raw_name_ = nullptr;
+        address_type m_address_ = nullptr;
+        std::size_t m_ordinal = 0;
+        lang_kind_impl m_lang_ = lang_kind_impl::unknown;
+        item_kind_impl m_item_kind_ = item_kind_impl::unknown;
+
+        // private ctor
+        symbol_type(SpecialCtor, const char* name, address_type addr,
+                    std::size_t ord, lang_kind_impl l, item_kind_impl item_kind)
+        : m_raw_name_(name),
+          m_address_(addr),
+          m_ordinal(ord),
+          m_lang_(l),
+          m_item_kind_(item_kind) {}
+
+      public:
+        constexpr symbol_type() = default;
+
+        std::string_view name() const noexcept {
+            return std::string_view{m_raw_name_ ? m_raw_name_ : ""};
+        }
+
+        std::string to_string() const {
+            return name().data();
+        }
+
+        address_type address() const noexcept {
+            return m_address_;
+        }
+
+        std::size_t ordinal() const noexcept {
+            return m_ordinal;
+        }
+
+        std::string_view language() const noexcept {
+            switch (m_lang_) {
+                using enum lang_kind_impl;
+                case c: return "C";
+                case cpp: return "C++";
+                case unknown: return "";
+            }
+        }
+
+        explicit operator bool() const noexcept {
+            return m_address_ != nullptr;
+        }
+
+        bool is_variable() const noexcept {
+            return m_item_kind_ == item_kind_impl::variable;
+        }
+
+        bool is_function() const noexcept {
+            return m_item_kind_ == item_kind_impl::function;
+        }
+
+        template <typename T>
+        T* unchecked_as_variable() const noexcept {
+            if (m_address_ == nullptr || m_item_kind_ != item_kind_impl::variable)
+                return nullptr;
+            return reinterpret_cast<T*>(m_address_);
+        }
+
+        template <typename T>
+        std::expected<T*, dynlib_error_code> try_as_variable() const noexcept {
+            if (m_address_ == nullptr)
+                return std::unexpected(dynlib_error_code::symbol_not_found);
+            if (m_item_kind_ != item_kind_impl::variable)
+                return std::unexpected(dynlib_error_code::symbol_not_variable);
+            return reinterpret_cast<T*>(m_address_);
+        }
+
+        template <typename T>
+        T* as_variable() const {
+            auto result = try_as_variable<T>();
+            if (result.has_value()) [[likely]]
+                return *result;
+            throw dynlib_error(result.error());
+        }
+
+        template <typename T>
+        T* unchecked_as_function() const noexcept {
+            if (m_address_ == nullptr || m_item_kind_ != item_kind_impl::function)
+                return nullptr;
+            return reinterpret_cast<T*>(m_address_);
+        }
+
+        template <typename T>
+        std::expected<T*, dynlib_error_code> try_as_function() const noexcept {
+            if (m_address_ == nullptr)
+                return std::unexpected(dynlib_error_code::symbol_not_found);
+            if (m_item_kind_ != item_kind_impl::function)
+                return std::unexpected(dynlib_error_code::symbol_not_function);
+            return reinterpret_cast<T*>(m_address_);
+        }
+
+        template <typename T>
+        T* as_function() const {
+            auto result = try_as_function<T>();
+            if (result.has_value()) [[likely]]
+                return *result;
+            throw dynlib_error(result.error());
+        }
+    };
+
+    /// dynlib::symbols_view
+    class dynlib::symbols_view {
+      private:
+        const dynlib* m_parent_ = nullptr;
+        std::size_t   m_size_   = 0;
+
+        friend class dynlib;
+
+        explicit symbols_view(const dynlib*);
+
+      public:
+        class iterator {
+          public:
+            using iterator_concept  = std::input_iterator_tag;
+            using iterator_category = std::forward_iterator_tag;
+            using difference_type   = std::ptrdiff_t;
+            using value_type        = dynlib::symbol_type;
+            using reference         = dynlib::symbol_type;
+
+          private:
+            using word_type_impl  = unsigned short;
+            using dword_type_impl = unsigned long;
+            friend class symbols_view;
+
+            const dynlib* m_parent_ = nullptr;
+            std::size_t m_index_    = 0;
+            std::size_t m_size_     = 0;
+
+            // raw pointers to PE structures
+            const dword_type_impl* m_name_rvas_ = nullptr;
+            const word_type_impl*  m_ordinals_ = nullptr;
+            const dword_type_impl* m_function_rvas_ = nullptr;
+            char* m_base_addr_ = nullptr;
+
+            // private ctor
+            iterator(const dynlib* parent, std::size_t index, std::size_t size);
+
+          public:
+            constexpr iterator() = default;
+
+            reference operator*() const;
+            iterator& operator++() noexcept {
+                m_index_++;
+                if (m_index_ >= m_size_)
+                    *this = iterator{};
+                return *this;
+            }
+
+            void operator++(int) noexcept {
+                ++*this;
+            }
+
+            bool operator==(const iterator& other) const noexcept {
+                if (m_base_addr_ == nullptr && other.m_base_addr_ == nullptr)
+                    return true;
+                return m_parent_ == other.m_parent_ && m_index_ == other.m_index_;
+            }
+        };
+
+        iterator begin() const {
+            if (m_size_ == 0)
+                return {};
+            return iterator{m_parent_, 0, m_size_};
+        }
+        constexpr iterator end() const noexcept { return {}; }
+        constexpr std::size_t size() const noexcept { return m_size_; }
+    };
+
+    /// dynlib::loaded_libraries_view
+    class dynlib::loaded_libraries_view {
+      public:
+        class iterator {
+          public:
+            using iterator_category = std::input_iterator_tag;
+            using difference_type   = std::ptrdiff_t;
+            using value_type        = dynlib;
+            using reference         = dynlib;
+
+          private:
+            friend class loaded_libraries_view;
+            enum class SpecialCtor {};
+            struct Impl;
+
+            Impl* m_impl_ = nullptr;
+
+            // private ctor
+            iterator(SpecialCtor);
+
+          public:
+            constexpr iterator() = default;
+            ~iterator();
+
+            iterator(const iterator&) = delete;
+            iterator& operator=(const iterator&) = delete;
+
+            iterator(iterator&&) noexcept;
+            iterator& operator=(iterator&&) noexcept;
+
+            reference operator*() const;
+            iterator& operator++();
+            void operator++(int) { ++*this; }
+
+            bool operator==(const iterator&) const noexcept;
+        };
+
+        constexpr loaded_libraries_view() = default;
+
+        iterator begin() const {
+            return iterator{iterator::SpecialCtor{}};
+        }
+
+        constexpr iterator end() const noexcept {
+            return iterator{};
+        }
+    };
+
+    /// dynlib::unchecked_extract_variable [impl]
+    template <typename T>
+    T* dynlib::unchecked_extract_variable(std::string_view name) const noexcept {
+        auto sym = unchecked_extract_symbol(name);
+        if (!sym)
+            return nullptr;
+        return sym.unchecked_as_variable<T>();
+    }
+
+    /// dynlib::try_extract_variable [impl]
+    template <typename T>
+    std::expected<T*, dynlib_error_code> dynlib::try_extract_variable(std::string_view name) const noexcept {
+        auto sym = try_extract_symbol(name);
+        if (!sym.has_value())
+            return std::unexpected(sym.error());
+        return sym->try_as_variable<T>();
+    }
+
+    /// dynlib::extract_variable [impl]
+    template <typename T>
+    T* dynlib::extract_variable(std::string_view name) const {
+        auto sym = extract_symbol(name);
+        return sym.as_variable<T>();
+    }
+
+    /// dynlib::unchecked_extract_function [impl]
+    template <typename T>
+    T* dynlib::unchecked_extract_function(std::string_view name) const noexcept {
+        auto sym = unchecked_extract_symbol(name);
+        if (!sym)
+            return nullptr;
+        return sym.unchecked_as_function<T>();
+    }
+
+    /// dynlib::try_extract_function [impl]
+    template <typename T>
+    std::expected<T*, dynlib_error_code> dynlib::try_extract_function(std::string_view name) const noexcept {
+        auto sym = try_extract_symbol(name);
+        if (!sym.has_value())
+            return std::unexpected(sym.error());
+        return sym->try_as_function<T>();
+    }
+
+    /// dynlib::extract_function [impl]
+    template <typename T>
+    T* dynlib::extract_function(std::string_view name) const {
+        auto sym = extract_symbol(name);
+        return sym.as_function<T>();
+    }
+
+} // namespace gold
+
+#endif // __GOLD_DYNAMIC_LIBRARY

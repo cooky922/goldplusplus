@@ -1,0 +1,447 @@
+// <gold/tagged_tuple> - gold++ library
+
+// Copyright (C) [ 2021 - 2024 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_TAGGED_TUPLE
+
+#include <gold/struct_string>
+#include <gold/bits/type_traits/specialization_of.hpp>
+#include <gold/bits/tuples/get.hpp>
+#include <gold/bits/tuples/to.hpp>
+#include <gold/bits/sequence/value_seq.hpp>
+#include <gold/bits/sequence/make_integer_seq.hpp>
+#include <gold/bits/__util/mini_span.hpp>
+#include <string_view>
+#include <gold/pack>
+
+// <gold/tagged_tuple>
+namespace gold {
+
+    /// tagged_member
+    template <gold::struct_string S, typename T>
+    struct tagged_member {
+        using member_type = T;
+        static constexpr std::string_view member_name = S.view();
+
+        template <typename U>
+        using rebind = tagged_member<S, U>;
+
+        [[no_unique_address]] member_type object;
+    };
+
+    namespace __tagged_tuple {
+
+        /// __tagged_tuple::is_binded_tagged_arg
+        template <typename>
+        inline constexpr bool is_binded_tagged_arg = false;
+
+        /// __tagged_tuple::is_tagged_tuple
+        template <typename>
+        inline constexpr bool is_tagged_tuple = false;
+
+        /// __tagged_tuple::binded_tagged_arg_t
+        template <gold::struct_string S, typename... Args>
+        struct binded_tagged_arg_t {
+            static constexpr std::string_view member_name = S.view();
+            std::tuple<Args...> stored_args;
+
+            constexpr binded_tagged_arg_t(int, Args&&... args)
+            : stored_args(std::forward<Args>(args)...) {}
+
+            binded_tagged_arg_t(const binded_tagged_arg_t&) = default;
+            binded_tagged_arg_t(binded_tagged_arg_t&&) = default;
+        };
+
+        template <gold::struct_string S, typename... Args>
+        inline constexpr bool is_binded_tagged_arg<binded_tagged_arg_t<S, Args...>> = true;
+
+        template <typename T>
+            requires std::is_reference_v<T> || std::is_const_v<T>
+        inline constexpr bool is_binded_tagged_arg<T> = is_binded_tagged_arg<std::remove_cvref_t<T>>;
+
+        /// __tagged_tuple::tagged_arg_t
+        template <gold::struct_string S>
+        struct tagged_arg_t {
+
+            explicit tagged_arg_t() noexcept = default;
+
+            // operator=
+            template <typename Arg>
+            constexpr auto operator=(this const tagged_arg_t, Arg&& arg) noexcept {
+                return __tagged_tuple::binded_tagged_arg_t<S, Arg>(0, std::forward<Arg>(arg));
+            }
+
+            // operator()
+            template <typename... Args>
+            constexpr auto operator()(this const tagged_arg_t, Args&&... args) noexcept {
+                return __tagged_tuple::binded_tagged_arg_t<S, Args...>(0, std::forward<Args>(args)...);
+            }
+
+        };
+
+    } // namespace __tagged_tuple
+
+    /// tagged_arg
+    template <gold::struct_string S>
+    inline constexpr __tagged_tuple::tagged_arg_t<S> tagged_arg {};
+
+    namespace __tagged_tuple {
+
+        /// __tagged_tuple::is_tagged_member
+        template <typename T>
+        concept is_tagged_member = gold::is_specialization_of_v<std::remove_cvref_t<T>, gold::tagged_member>();
+
+        /// __tagged_tuple::member_names
+        template <typename... Ms>
+        consteval auto member_names() {
+            static constexpr std::string_view member_names [] { Ms::member_name ... };
+            return __util::mini_span<const std::string_view>(member_names);
+        }
+
+        /// __tagged_tuple::has_unique_names
+        template <typename... Ms>
+        consteval bool has_unique_names() {
+            const auto ms = __tagged_tuple::member_names<Ms...>();
+            for (const std::string_view& i : ms) {
+                for (const std::string_view& j : ms) {
+                    if (&i == &j)
+                        break;
+                    if (i == j)
+                        return false;
+                }
+            }
+            return true;
+        }
+
+        /// __tagged_tuple::find_name
+        consteval std::size_t find_name(__util::mini_span<const std::string_view> sp, std::string_view sv) {
+            for (std::size_t c = 0; std::string_view s : sp) {
+                if (s == sv)
+                    return c;
+                ++c;
+            }
+            return std::size_t(-1);
+        }
+
+        /// __tagged_tuple::contains_name
+        template <typename M, typename... Ms>
+        consteval bool name_contained_in() {
+            return find_name(__tagged_tuple::member_names<Ms...>(), M::member_name) != std::size_t(-1);
+        }
+
+        template <gold::struct_string S, typename... Ms>
+        consteval bool name_contained_in() {
+            return find_name(__tagged_tuple::member_names<Ms...>(), S.view()) != std::size_t(-1);
+        }
+
+        /// __tagged_tuple::tuple_leaf
+        template <std::size_t I, typename Mem>
+        struct tuple_leaf {
+            using tagged_member_type = Mem;
+            using member_type = tagged_member_type::member_type;
+
+            static constexpr std::string_view member_name = tagged_member_type::member_name;
+            static constexpr std::size_t index = I;
+
+            [[no_unique_address]] member_type object;
+        };
+
+        /// __tagged_tuple::secret_token
+        struct secret_token { int _; };
+
+        /// __tagged_tuple::xtor_from_args
+        template <typename M, typename... Args>
+        constexpr M::member_type xtor_from_args(Args&... args) {
+            constexpr std::size_t index = std::size_t(__tagged_tuple::find_name(__tagged_tuple::member_names<Args...>(), M::member_name));
+            return tuples::to<typename M::member_type>(gold::pack_get<index>(args...).stored_args);
+        }
+
+        /// __tagged_tuple::tuple_base
+        template <typename, typename...>
+        struct tuple_base;
+
+        template <std::size_t... Is, typename... Ms>
+        struct tuple_base<gold::index_seq_t<Is...>, Ms...>
+        : tuple_leaf <Is, Ms> ... {
+            using idx_type = gold::index_seq_t<Is...>;
+            static constexpr auto names = __tagged_tuple::member_names<Ms...>();
+            static constexpr std::size_t field_count = sizeof...(Ms);
+
+            // obtaining base type by index
+            template <std::size_t I>
+            using base_type_by_index = tuple_leaf <I, __type_pack_element<I, Ms...>>;
+
+            // obtaining base type by name
+            template <gold::struct_string S,
+                      std::size_t D = __tagged_tuple::find_name(names, S.view())>
+                requires (D != std::size_t(-1))
+            using base_type_by_name = tuple_leaf <std::size_t(D), __type_pack_element<D, Ms...>>;
+
+            // default ctor
+            constexpr tuple_base()
+                requires (std::default_initializable<typename Ms::member_type> && ...)
+            : tuple_leaf<Is, Ms> () ... {}
+
+            // copy ctor
+            constexpr tuple_base(const tuple_base& other)
+                requires (std::is_copy_constructible_v<typename Ms::member_type> && ...)
+            : tuple_leaf<Is, Ms> (other.tuple_leaf<Is, Ms>::object) ... {}
+
+            // move ctor
+            constexpr tuple_base(tuple_base&& other)
+                requires (std::is_move_constructible_v<typename Ms::member_type> && ...)
+            : tuple_leaf<Is, Ms> (std::move(other.tuple_leaf<Is, Ms>::object)) ... {}
+
+            // ctor from args ...
+            template <typename... Args>
+                requires (sizeof...(Args) == sizeof...(Ms))
+            constexpr tuple_base(int __tagged_tuple::secret_token::*, Args&&... args)
+            : tuple_leaf<Is, Ms> (std::forward<Args>(args)) ... {}
+
+            // ctor from tagged args ...
+            template <typename... Args>
+                requires (sizeof...(Args) == sizeof...(Ms))
+            constexpr tuple_base(int __tagged_tuple::secret_token::*,
+                                 int __tagged_tuple::secret_token::*,
+                                 Args&&... args)
+            : tuple_leaf<Is, Ms> (__tagged_tuple::xtor_from_args<Ms>(args...)) ... {}
+
+            template <typename... Us>
+                requires (sizeof...(Us) == sizeof...(Ms))
+                      && (std::is_constructible_v<typename Ms::member_type, const Us&> && ...)
+            constexpr tuple_base(const tuple_base<idx_type, Us...>& other)
+            : tuple_leaf<Is, Ms> (other.tuple_leaf<Is, Us>::object) ... {}
+
+            template <typename... Us>
+                requires (sizeof...(Us) == sizeof...(Ms))
+                      && (std::is_constructible_v<typename Ms::member_type, Us&&> && ...)
+            constexpr tuple_base(tuple_base<idx_type, Us...>&& other)
+            : tuple_leaf<Is, Ms> (std::move(other.tuple_leaf<Is, Us>::object)) ... {}
+
+            constexpr tuple_base& operator=(this tuple_base& self, const tuple_base& other)
+                requires (std::is_copy_assignable_v<typename Ms::member_type> && ...)
+            {
+                ((self.tuple_leaf<Is, Ms>::object = other.tuple_leaf<Is, Ms>::object), ...);
+                return self;
+            }
+
+            constexpr tuple_base& operator=(this tuple_base& self, tuple_base&& other)
+                requires (std::is_move_assignable_v<typename Ms::member_type> && ...)
+            {
+                ((self.tuple_leaf<Is, Ms>::object = std::move(other.tuple_leaf<Is, Ms>::object)), ...);
+                return self;
+            }
+
+            template <typename... Us>
+                requires (sizeof...(Us) == sizeof...(Ms))
+                      && (std::is_assignable_v<typename Ms::member_type&, const Us&> && ...)
+            constexpr tuple_base& operator=(this tuple_base& self, const tuple_base<idx_type, Us...>& other) {
+                ((self.tuple_leaf<Is, Ms>::object = other.tuple_leaf<Is, Us>::object), ...);
+                return self;
+            }
+
+            template <typename... Us>
+                requires (sizeof...(Us) == sizeof...(Ms))
+                      && (std::is_assignable_v<typename Ms::member_type&, Us&&> && ...)
+            constexpr tuple_base& operator=(this tuple_base& self, tuple_base<idx_type, Us...>&& other) {
+                ((self.tuple_leaf<Is, Ms>::object = std::move(other.tuple_leaf<Is, Us>::object)), ...);
+                return self;
+            }
+
+            template <std::size_t I, typename Self>
+            constexpr decltype(auto) get(this Self&& self) noexcept {
+                return std::forward_like<Self>(self.base_type_by_index<I>::object);
+            }
+
+            template <gold::struct_string S, typename Self>
+            constexpr decltype(auto) get(this Self&& self) noexcept {
+                return std::forward_like<Self>(self.base_type_by_name<S>::object);
+            }
+
+            template <typename Self, typename F>
+            constexpr decltype(auto) apply(this Self&& self, F&& f) {
+                return gold::invoke(std::forward<F>(f),
+                                    std::forward_like<Self>(self.tuple_leaf<Is, Ms>::object)...);
+            }
+
+            constexpr void swap(tuple_base& other) noexcept {
+                (std::ranges::swap(tuple_leaf<Is, Ms>::object, other.tuple_leaf<Is, Ms>::object), ...);
+            }
+
+            constexpr bool operator==(const tuple_base& other) const noexcept
+                requires (std::equality_comparable<typename Ms::member_type> && ...)
+            {
+                return ((tuple_leaf<Is, Ms>::object == other.tuple_leaf<Is, Ms>::object) && ...);
+            }
+
+            template <typename... Us>
+                requires (std::equality_comparable_with<typename Ms::member_type, typename Us::member_type> && ...)
+            constexpr bool operator==(const tuple_base<idx_type, Us...>& other) const noexcept {
+                return ((tuple_leaf<Is, Ms>::object == other.tuple_leaf<Is, Us>::object) && ...);
+            }
+
+            constexpr auto operator<=>(const tuple_base& other) const noexcept
+                requires (std::three_way_comparable<typename Ms::member_type> && ...)
+            {
+                using return_type = std::common_comparison_category_t<std::compare_three_way_result_t<typename Ms::member_type>...>;
+                return_type result =  return_type::equivalent;
+                return (((result = tuple_leaf<Is, Ms>::object <=> other.tuple_leaf<Is, Ms>::object, result != 0) || ...), result);
+            }
+
+            template <typename... Us>
+                requires (std::three_way_comparable_with<typename Ms::member_type, typename Us::member_type> && ...)
+            constexpr auto operator<=>(const tuple_base<idx_type, Us...>& other) const noexcept {
+                using return_type = std::common_comparison_category_t<std::compare_three_way_result_t<typename Ms::member_type>...>;
+                return_type result =  return_type::equivalent;
+                return (((result = tuple_leaf<Is, Ms>::object <=> other.tuple_leaf<Is, Us>::object, result != 0) || ...), result);
+            }
+
+        };
+
+    } // namespace __tagged_tuple
+
+    /// tagged_tuple
+    template <__tagged_tuple::is_tagged_member... Ms>
+        requires (__tagged_tuple::has_unique_names<Ms...>())
+    class tagged_tuple {
+      private:
+        using base_type = __tagged_tuple::tuple_base<gold::index_seq_for_t<Ms...>, Ms...>;
+
+        [[no_unique_address]] base_type m_base_;
+
+        template <typename... Args>
+        static consteval bool xible_from_untagged_args() {
+            if constexpr (((!__tagged_tuple::is_binded_tagged_arg<Args>) && ...))
+                return (std::is_constructible_v<typename Ms::member_type, Args> && ...);
+            return false;
+        }
+
+        template <typename... Args>
+        static consteval bool xible_from_tagged_args() {
+            if constexpr ((__tagged_tuple::is_binded_tagged_arg<Args> && ...))
+                return __tagged_tuple::has_unique_names<std::remove_cvref_t<Args>...>()
+                    && (__tagged_tuple::name_contained_in<Args, Ms...>() && ...);
+            return false;
+        }
+
+      public:
+        tagged_tuple() = default;
+        tagged_tuple(const tagged_tuple&) = default;
+        tagged_tuple(tagged_tuple&&) = default;
+        tagged_tuple& operator=(const tagged_tuple&) = default;
+        tagged_tuple& operator=(tagged_tuple&&) = default;
+
+        template <typename... Args>
+            requires (sizeof...(Args) > 0 && sizeof...(Args) == sizeof...(Ms))
+                  && (xible_from_untagged_args<Args...>())
+        constexpr tagged_tuple(Args&&... args)
+        : m_base_(&__tagged_tuple::secret_token::_,
+                  std::forward<Args>(args)...) {}
+
+        template <typename... Args>
+            requires (sizeof...(Args) > 0 && sizeof...(Args) == sizeof...(Ms))
+                  && (xible_from_tagged_args<Args...>())
+        constexpr tagged_tuple(Args&&... args)
+        : m_base_(&__tagged_tuple::secret_token::_, &__tagged_tuple::secret_token::_,
+                  std::forward<Args>(args)...) {}
+
+        template <typename... Args>
+            requires (sizeof...(Args) > 0 && sizeof...(Args) == sizeof...(Ms))
+                  && (!xible_from_untagged_args<Args...>() && !xible_from_tagged_args<Args...>())
+        tagged_tuple(Args&&...) = delete;
+
+        // the second constraint is important for structured binding
+        template <typename... Args>
+            requires (sizeof...(Args) > 0)
+                  && (sizeof...(Args) != 1 || !std::is_same_v<tagged_tuple, std::remove_cvref_t<Args>...>)
+                  && (sizeof...(Args) != sizeof...(Ms))
+        tagged_tuple(Args&&...) = delete;
+
+        template <typename... Us>
+            requires (sizeof...(Us) == sizeof...(Ms))
+                  && (std::is_constructible_v<typename Ms::member_type, const typename Us::member_type&> && ...)
+        constexpr tagged_tuple(const tagged_tuple<Us...>& other)
+        : m_base_(other) {}
+
+        template <typename... Us>
+            requires (sizeof...(Us) == sizeof...(Ms))
+                  && (std::is_constructible_v<typename Ms::member_type, typename Us::member_type&&> && ...)
+        constexpr tagged_tuple(tagged_tuple<Us...>&& other)
+        : m_base_(std::move(other)) {}
+
+        template <typename... Us>
+            requires (sizeof...(Us) == sizeof...(Ms))
+                  && (std::is_assignable_v<typename Ms::member_type&, const typename Us::member_type&> && ...)
+        constexpr tagged_tuple& operator=(this tagged_tuple& self, const tagged_tuple<Us...>& other) {
+            self.m_base_ = other.m_base_;
+            return self;
+        }
+
+        template <typename... Us>
+            requires (sizeof...(Us) == sizeof...(Ms))
+                  && (std::is_assignable_v<typename Ms::member_type&, typename Us::member_type&&> && ...)
+        constexpr tagged_tuple& operator=(this tagged_tuple& self, tagged_tuple<Us...>&& other) {
+            self.m_base_ = std::move(other.m_base_);
+            return self;
+        }
+
+        static consteval std::size_t size() noexcept {
+            return base_type::field_count;
+        }
+
+        template <std::size_t I, typename Self>
+        constexpr decltype(auto) get(this Self&& self) noexcept {
+            return std::forward_like<Self>(self.m_base_).template get<I>();
+        }
+
+        template <gold::struct_string S, typename Self>
+            requires (__tagged_tuple::name_contained_in<S, Ms...>())
+        constexpr decltype(auto) get(this Self&& self) noexcept {
+            return std::forward_like<Self>(self.m_base_).template get<S>();
+        }
+
+        template <typename Self, typename F>
+        constexpr decltype(auto) apply(this Self&& self, F&& f) {
+            return std::forward_like<Self>(self.m_base_).template apply(std::forward<F>(f));
+        }
+
+        constexpr void swap(tagged_tuple& other) noexcept {
+            m_base_.swap(other.m_base_);
+        }
+
+        constexpr bool operator==(const tagged_tuple&) const noexcept = default;
+        constexpr auto operator<=>(const tagged_tuple&) const noexcept = default;
+    };
+
+    namespace __tagged_tuple {
+
+        template <typename... Ms>
+        inline constexpr bool is_tagged_tuple<tagged_tuple<Ms...>> = true;
+
+    } // namespace __tagged_tuple
+
+    /// tagged_get
+    template <gold::struct_string S, typename TaggedTuple>
+        requires __tagged_tuple::is_tagged_tuple<std::remove_cvref_t<TaggedTuple>>
+    constexpr decltype(auto) tagged_get(TaggedTuple&& op) noexcept {
+        return std::forward<TaggedTuple>(op).template get<S>();
+    }
+
+    namespace tuples {
+
+        template <typename... Ms>
+        struct tuple_size<tagged_tuple<Ms...>> {
+            static constexpr std::size_t value = sizeof...(Ms);
+        };
+
+        template <std::size_t I, typename... Ms>
+        struct tuple_element<I, tagged_tuple<Ms...>> {
+            using type = __type_pack_element<I, typename Ms::member_type...>;
+        };
+
+    } // namespace tuples
+
+} // namespace gold
+
+#endif // __GOLD_TAGGED_TUPLE

@@ -1,0 +1,1145 @@
+// <gold/preview/canvas> - gold++ library
+
+// Copyright (C) [ 2021 - 2025 ] - present Desmond Gold
+
+// note: this is only a prototype
+// note: this header targets 2D canvas
+
+// provides a vector graphic-based device-independent API
+// (inspired by Cairo graphics)
+
+#pragma once
+#ifndef __GOLD_PREVIEW_CANVAS
+#define __GOLD_PREVIEW_CANVAS
+
+#include <gold/basic_types>
+#include <gold/bits/algo/min_max.hpp>
+#include <type_traits>
+#include <bit>
+#include <compare>
+#include <numbers>
+
+// for canvas images (do not provide the implementation if 'SFML_STATIC' is defined)
+#ifdef SFML_STATIC
+#include <stb/stb_image.h>
+#include <stb/stb_image_write.h>
+#else
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb/stb_image.h>
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb/stb_image_write.h>
+#endif
+
+#include <gold/expected>
+#include <gold/mdspan>
+#include <gold/bits/mdspan/index_cartesian_product.hpp>
+#include <vector>
+#include <string_view>
+#include <span>
+
+namespace gold::inline preview::canvas {
+
+    // TODO:
+    // + object transformations
+
+    // SUMMARY:
+    // + canvas context
+    // + figures
+    // + attributes
+
+    /// canvas::basic_position
+    template <typename T>
+    struct basic_position {
+        using value_type = T;
+
+        T x;
+        T y;
+
+        friend constexpr bool operator==(basic_position, basic_position) noexcept = default;
+        friend constexpr std::strong_ordering operator<=>(basic_position, basic_position) noexcept = default;
+    };
+
+    /// canvas::position
+    using position = basic_position <std::size_t>;
+
+    /// canvas::basic_size
+    template <typename T>
+    struct basic_size {
+        using value_type = T;
+
+        T width;
+        T height;
+
+        friend constexpr bool operator==(basic_size, basic_size) noexcept = default;
+        friend constexpr std::strong_ordering operator<=>(basic_size, basic_size) noexcept = default;
+    };
+
+    /// canvas::size
+    using size = basic_size <std::size_t>;
+
+    /// canvas::basic_region
+    template <typename T>
+    struct basic_region {
+        using value_type    = T;
+        using position_type = basic_position<T>;
+        using size_type     = basic_size<T>;
+
+        // base position is at top-left
+        basic_position<T> base_position;
+        basic_size<T> size;
+
+        constexpr bool empty() const noexcept {
+            return size.width == 0 || size.height == 0;
+        }
+
+        constexpr explicit operator bool() const noexcept {
+            return !empty();
+        }
+
+        // temporary names
+        constexpr basic_position<T> top_left_position() const noexcept
+        { return {.x = base_position.x, .y = base_position.y}; }
+        constexpr basic_position<T> top_right_position() const noexcept
+        { return {.x = base_position.x + size.width, .y = base_position.y}; }
+        constexpr basic_position<T> bottom_left_position() const noexcept
+        { return {.x = base_position.x, .y = base_position.y + size.height}; }
+        constexpr basic_position<T> bottom_right_position() const noexcept
+        { return {.x = base_position.x + size.width, .y = base_position.y + size.height}; }
+
+        constexpr auto corners() const noexcept {
+            struct return_type {
+                T top;    // y-component top-left
+                T left;   // x-component top-left
+                T bottom; // y-component bottom-right
+                T right;  // x-component bottom-right
+            };
+            const auto [left, top]     = top_left_position();
+            const auto [right, bottom] = bottom_right_position();
+            return return_type {
+                .top    = top,
+                .left   = left,
+                .bottom = bottom,
+                .right  = right
+            };
+        }
+
+        constexpr bool contains(basic_position<T> pos) const noexcept {
+            const auto [top, left, bottom, right] = corners();
+            return left <= pos.x && pos.x <= right &&
+                   top  <= pos.y && pos.y <= bottom;
+        }
+
+        constexpr basic_region<T> intersection_with(basic_region<T> other) const noexcept {
+            // TODO: validate
+
+            const auto [top, left, bottom, right] = corners();
+            const auto [other_top, other_left, other_bottom, other_right] = other.corners();
+
+            if (left >= other_right ||
+                other_left >= right ||
+                top >= other_bottom ||
+                other_top >= bottom)
+                return {};
+
+            const auto common_left   = __algo::max_element({left, other_left});
+            const auto common_top    = __algo::max_element({top, other_top});
+            const auto common_right  = __algo::min_element({right, other_right});
+            const auto common_bottom = __algo::min_element({bottom, other_bottom});
+
+            return {
+                .base_position {
+                    .x = common_left,
+                    .y = common_top,
+                },
+                .size {
+                    .width = common_right - common_left,
+                    .height = common_bottom - common_top,
+                }
+            };
+        }
+
+        constexpr bool intersects_with(basic_region<T> other) const noexcept
+        { return !intersection_with(other).empty(); }
+
+        friend constexpr bool operator==(basic_region, basic_region) noexcept = default;
+    };
+
+    /// canvas::region
+    using region = basic_region <std::size_t>;
+
+    /// canvas::angle
+    struct angle {
+        using storage_type = double;
+
+        double radians;
+
+        static constexpr angle from_radians(double val) {
+            return angle {val};
+        }
+
+        static constexpr angle from_degrees(double val) {
+            return angle {val / 180.0 * std::numbers::pi};
+        }
+
+        constexpr double to_radians() const noexcept {
+            return radians;
+        }
+
+        constexpr double to_degrees() const noexcept {
+            return radians * 180.0 / std::numbers::pi;
+        }
+
+        constexpr angle normalized() const noexcept {
+            double new_val = __builtin_fmod(radians, std::numbers::pi * 2);
+            if (new_val < 0)
+                new_val += std::numbers::pi * 2;
+            return angle {new_val};
+        }
+    };
+
+    /// canvas::color_hex
+    enum color_hex : gold::uint32_t {};
+
+    /// canvas::color_hex_with_alpha
+    enum color_hex_with_alpha : gold::uint32_t {};
+
+    /// canvas::basic_color_rgb
+    // concrete color with alpha = 255
+    template <typename T>
+    struct basic_color_rgb {
+        using channel_storage_type = T;
+
+        T red;
+        T green;
+        T blue;
+
+        static constexpr bool is_fully_opaque() noexcept { return true; }
+        static constexpr bool is_fully_transparent() noexcept { return false; }
+
+        constexpr bool is_ok() const noexcept {
+            if constexpr (__is_same(T, gold::uint8_t))
+                return true;
+            else if constexpr (std::is_unsigned_v<T> && std::is_integral_v<T>)
+                return red   <= 255 &&
+                       green <= 255 &&
+                       blue  <= 255;
+            else if constexpr (sizeof(T) > 1 && std::is_signed_v<T> && std::is_integral_v<T>)
+                return 0 <= red   && red   <= 255 &&
+                       0 <= green && green <= 255 &&
+                       0 <= blue  && blue  <= 255;
+            else if constexpr (std::is_floating_point_v<T>)
+                return 0.0 <= red   && red   <= 1.0 &&
+                       0.0 <= green && green <= 1.0 &&
+                       0.0 <= blue  && blue  <= 1.0;
+            else
+                return false;
+        }
+
+        /// operator==
+        constexpr bool operator==(const basic_color_rgb&) const noexcept = default;
+    };
+
+    /// canvas::color_rgb
+    using color_rgb = basic_color_rgb<gold::uint8_t>;
+
+    /// canvas::color_rgb_float
+    using color_rgb_float = basic_color_rgb<float>;
+
+    /// canvas::color_rgb_unit
+    // synonymous to canvas::color_rgb_float
+    // where the numbers are normalized into [0, 1]
+    using color_rgb_unit = basic_color_rgb<float>;
+
+    /// canvas::basic_color_rgba
+    template <typename T>
+    struct basic_color_rgba {
+        using channel_storage_type = T;
+
+        T red;
+        T green;
+        T blue;
+        T alpha;
+
+        constexpr bool is_fully_opaque() const noexcept {
+            if constexpr (std::is_floating_point_v<T>)
+                return alpha == 1.0;
+            else
+                return alpha == 255;
+        }
+
+        constexpr bool is_fully_transparent() const noexcept { return alpha == 0; }
+
+        constexpr bool is_ok() const noexcept {
+            if constexpr (__is_same(T, gold::uint8_t))
+                return true;
+            else if constexpr (std::is_unsigned_v<T> && std::is_integral_v<T>)
+                return red   <= 255 &&
+                       green <= 255 &&
+                       blue  <= 255 &&
+                       alpha <= 255;
+            else if constexpr (sizeof(T) > 1 && std::is_signed_v<T> && std::is_integral_v<T>)
+                return 0 <= red   && red   <= 255 &&
+                       0 <= green && green <= 255 &&
+                       0 <= blue  && blue  <= 255 &&
+                       0 <= alpha && alpha <= 255;
+            else if constexpr (std::is_floating_point_v<T>)
+                return 0.0 <= red   && red   <= 1.0 &&
+                       0.0 <= green && green <= 1.0 &&
+                       0.0 <= blue  && blue  <= 1.0 &&
+                       0.0 <= alpha && alpha <= 1.0;
+            else
+                return false;
+        }
+
+        /// operator==
+        constexpr bool operator==(const basic_color_rgba&) const noexcept = default;
+    };
+
+    /// canvas::color_rgba
+    using color_rgba = basic_color_rgba<gold::uint8_t>;
+
+    /// canvas::color_rgba_float
+    using color_rgba_float = basic_color_rgba<float>;
+
+    /// canvas::color_rgba_unit
+    using color_rgba_unit = basic_color_rgba<float>;
+
+    /// canvas::color_hsl
+    struct color_hsl {
+        // degree
+        gold::uint16_t hue;         // 0 - 360
+
+        // percentage
+        gold::uint8_t  saturation;  // 0 - 100
+        gold::uint8_t  lightness;   // 0 - 100
+
+        static consteval bool is_fully_opaque() { return true; }
+        static consteval bool is_fully_transparent() { return false; }
+
+        constexpr bool is_ok() const noexcept {
+            return hue        <  360 &&
+                   saturation <= 100 &&
+                   lightness  <= 100;
+        }
+
+        /// operator==
+        constexpr bool operator==(const color_hsl&) const noexcept = default;
+    };
+
+    /// canvas::color_cmyk
+    struct color_cmyk {
+        float cyan;
+        float magenta;
+        float yellow;
+        float black_key;
+
+        static consteval bool is_fully_opaque() { return true; }
+        static consteval bool is_fully_transparent() { return false; }
+
+        constexpr bool is_ok() const noexcept {
+            return 0.0f <= cyan      && cyan      <= 1.0f
+                && 0.0f <= magenta   && magenta   <= 1.0f
+                && 0.0f <= yellow    && yellow    <= 1.0f
+                && 0.0f <= black_key && black_key <= 1.0f;
+        }
+
+        /// operator==
+        constexpr bool operator==(const color_cmyk&) const noexcept = default;
+    };
+
+    /// canvas::color
+    class color {
+      private:
+        // canvas::color internally stores a value
+        // representing hexadecimal value of a color
+
+        // here is the sequence of bytes regardless of the endianness:
+        // 1st byte -> red channel
+        // 2nd byte -> green channel
+        // 3rd byte -> blue channel
+        // 4th byte -> alpha channel
+
+        gold::uint32_t m_color_hex_;
+
+      public:
+        constexpr color() noexcept = default;
+
+        /// from_hex (canvas::color_hex)
+        static constexpr color from_hex(canvas::color_hex arg) noexcept {
+            gold::uint32_t underlying_code = static_cast<gold::uint32_t>(arg);
+            underlying_code <<= 8;
+            underlying_code  |= 0xff;
+
+            color result;
+            if constexpr (std::endian::native == std::endian::little)
+                result.m_color_hex_ = __builtin_bswap32(underlying_code);
+            else
+                result.m_color_hex_ = underlying_code;
+
+            return result;
+        }
+
+        /// from_hex (canvas::color_hex_with_alpha)
+        static constexpr color from_hex(canvas::color_hex_with_alpha arg) noexcept {
+            color result;
+            if constexpr (std::endian::native == std::endian::little)
+                result.m_color_hex_ = __builtin_bswap32(static_cast<gold::uint32_t>(arg));
+            else
+                result.m_color_hex_ = arg;
+            return result;
+        }
+
+        /// from_rgb
+        static constexpr color from_rgb(canvas::color_rgb arg) noexcept {
+            return from_hex(canvas::color_hex(
+                ((arg.red   & 0xff) << 16) |
+                ((arg.green & 0xff) << 8)  |
+                 (arg.blue  & 0xff)
+            ));
+        }
+
+        static constexpr color from_rgb(gold::uint8_t r, gold::uint8_t g, gold::uint8_t b) noexcept {
+            return from_rgb(canvas::color_rgb(r, g, b));
+        }
+
+        /// from_rgb_unit
+        static constexpr color from_rgb_unit(canvas::color_rgb_unit arg) noexcept {
+            return from_rgb(canvas::color_rgb{
+                .red   = static_cast<gold::uint8_t>(arg.red * 255),
+                .green = static_cast<gold::uint8_t>(arg.green * 255),
+                .blue  = static_cast<gold::uint8_t>(arg.blue * 255)
+            });
+        }
+
+        /// from_rgba
+        static constexpr color from_rgba(canvas::color_rgba arg) noexcept {
+            return from_hex(canvas::color_hex_with_alpha(
+                ((arg.red   & 0xff) << 24) |
+                ((arg.green & 0xff) << 16) |
+                ((arg.blue  & 0xff) << 8)  |
+                 (arg.alpha & 0xff)
+            ));
+        }
+
+        static constexpr color from_rgba(gold::uint8_t r, gold::uint8_t g, gold::uint8_t b, gold::uint8_t a) noexcept {
+            return from_rgba(canvas::color_rgba(r, g, b, a));
+        }
+
+        /// from_rgba_unit
+        static constexpr color from_rgba_unit(canvas::color_rgba_unit arg) noexcept {
+            return from_rgba(canvas::color_rgba{
+                .red   = static_cast<gold::uint8_t>(arg.red   * 255),
+                .green = static_cast<gold::uint8_t>(arg.green * 255),
+                .blue  = static_cast<gold::uint8_t>(arg.blue  * 255),
+                .alpha = static_cast<gold::uint8_t>(arg.alpha * 255)
+            });
+        }
+
+        /// from_hsl
+        static constexpr color from_hsl(canvas::color_hsl arg) noexcept {
+            // TODO: optimize
+            const double normalized_saturation = double (arg.saturation) / 100.0;
+            const double normalized_lightness  = double (arg.lightness)  / 100.0;
+            const double c = (1 - __builtin_fabs(2 * normalized_lightness - 1)) * normalized_saturation;
+            const double x = c * (1 - __builtin_fabs(__builtin_fmod(double(arg.hue) / 60, 2) - 1));
+            const double m = normalized_lightness - c / 2;
+            const auto [prime_red, prime_green, prime_blue] = [&, hue = arg.hue] {
+                struct return_type { double r, g, b; };
+                if (hue < 60)
+                    return return_type { c, x, 0 };
+                else if (60 <= hue && hue < 120)
+                    return return_type { x, c, 0 };
+                else if (120 <= hue && hue < 180)
+                    return return_type { 0, c, x };
+                else if (180 <= hue && hue < 240)
+                    return return_type { 0, x, c };
+                else if (240 <= hue && hue < 300)
+                    return return_type { x, 0, c };
+                else
+                    return return_type { c, 0, x };
+            }();
+            return from_rgb_unit({
+                .red   = static_cast<float>(prime_red + m),
+                .green = static_cast<float>(prime_green + m),
+                .blue  = static_cast<float>(prime_blue + m)
+            });
+        }
+
+        /// from_cmyk
+        static constexpr color from_cmyk(canvas::color_cmyk arg) noexcept {
+            return from_rgb({
+                .red   = gold::uint8_t(255 * (1 - arg.cyan)    * (1 - arg.black_key)),
+                .green = gold::uint8_t(255 * (1 - arg.magenta) * (1 - arg.black_key)),
+                .blue  = gold::uint8_t(255 * (1 - arg.yellow)  * (1 - arg.black_key))
+            });
+        }
+
+        /// extract_red
+        constexpr gold::uint8_t extract_red() const noexcept {
+            if constexpr (std::endian::native == std::endian::little)
+                return m_color_hex_ & 0xff;
+            else
+                return (m_color_hex_ >> 24) & 0xff;
+        }
+
+        /// extract_green
+        constexpr gold::uint8_t extract_green() const noexcept {
+            if constexpr (std::endian::native == std::endian::little)
+                return (m_color_hex_ >> 8) & 0xff;
+            else
+                return (m_color_hex_ >> 16) & 0xff;
+        }
+
+        /// extract_blue
+        constexpr gold::uint8_t extract_blue() const noexcept {
+            if constexpr (std::endian::native == std::endian::little)
+                return (m_color_hex_ >> 16) & 0xff;
+            else
+                return (m_color_hex_ >> 8) & 0xff;
+        }
+
+        /// extract_alpha
+        constexpr gold::uint8_t extract_alpha() const noexcept {
+            if constexpr (std::endian::native == std::endian::little)
+                return (m_color_hex_ >> 24) & 0xff;
+            else
+                return m_color_hex_ & 0xff;
+        }
+
+        /// set_red
+        constexpr color& set_red(gold::uint8_t c) noexcept {
+            // TODO: optimize
+            color_rgba rgba = to_rgba();
+            rgba.red = c;
+            return *this = from_rgba(rgba);
+        }
+
+        /// set_green
+        constexpr color& set_green(gold::uint8_t c) noexcept {
+            color_rgba rgba = to_rgba();
+            rgba.green = c;
+            return *this = from_rgba(rgba);
+        }
+
+        /// set_blue
+        constexpr color& set_blue(gold::uint8_t c) noexcept {
+            // TODO: optimize
+            color_rgba rgba = to_rgba();
+            rgba.blue = c;
+            return *this = from_rgba(rgba);
+        }
+
+        /// set_alpha
+        constexpr color& set_alpha(gold::uint8_t c) noexcept {
+            // TODO: optimize
+            color_rgba rgba = to_rgba();
+            rgba.alpha = c;
+            return *this = from_rgba(rgba);
+        }
+
+        /// with_alpha
+        // different from 'set_alpha'
+        // can be used in both mutable and constant object
+        // but it returns a new object regardless of its immutability
+        constexpr color with_alpha(gold::uint8_t c) const noexcept {
+            // TODO: optimize
+            color_rgba rgba = to_rgba();
+            rgba.alpha = c;
+            return from_rgba(rgba);
+        }
+
+        /// is_fully_opaque
+        constexpr bool is_fully_opaque() const noexcept {
+            return extract_alpha() == 255;
+        }
+
+        /// is_fully_transparent
+        constexpr bool is_fully_transparent() const noexcept {
+            return extract_alpha() == 0;
+        }
+
+        /// alpha_blended_on
+        constexpr color alpha_blended_on(canvas::color other) const noexcept {
+            // normalize alpha
+            const double alpha = double(extract_alpha()) / 255.0;
+            const double on_alpha = double(other.extract_alpha()) / 255.0;
+            const double new_alpha = alpha + on_alpha * (1 - alpha);
+            const auto [this_red, this_green, this_blue] = to_rgb();
+            const auto [other_red, other_green, other_blue] = other.to_rgb();
+
+            return from_rgba({
+                .red   = gold::uint8_t(alpha * this_red   + (1.0 - alpha) * other_red),
+                .green = gold::uint8_t(alpha * this_green + (1.0 - alpha) * other_green),
+                .blue  = gold::uint8_t(alpha * this_blue  + (1.0 - alpha) * other_blue),
+                .alpha = gold::uint8_t(new_alpha * 255)
+            });
+        }
+
+        /// alpha_blend_on
+        constexpr color& alpha_blend_on(canvas::color other) noexcept {
+            return *this = alpha_blended_on(other);
+        }
+
+        /// to_hex
+        constexpr color_hex to_hex() const noexcept {
+            return color_hex(to_hex_with_alpha() >> 8);
+        }
+
+        /// to_hex_with_alpha
+        constexpr color_hex_with_alpha to_hex_with_alpha() const noexcept {
+            if constexpr (std::endian::native == std::endian::little)
+                return color_hex_with_alpha(__builtin_bswap32(m_color_hex_));
+            else
+                return color_hex_with_alpha(m_color_hex_);
+        }
+
+        /// to_rgb
+        constexpr color_rgb to_rgb() const noexcept {
+            const auto [r, g, b, _] = to_rgba();
+            return color_rgb { r, g, b };
+        }
+
+        /// to_rgba
+        constexpr color_rgba to_rgba() const noexcept {
+            return std::bit_cast<color_rgba>(m_color_hex_);
+        }
+
+        /// to_hsl
+        constexpr color_hsl to_hsl() const noexcept {
+            const auto [red, green, blue] = to_rgb();
+
+            const double normalized_red = double(red) / 255.0;
+            const double normalized_green = double(green) / 255.0;
+            const double normalized_blue = double(blue) / 255.0;
+
+            const auto [c_min, c_max] = __algo::min_max_element({red, green, blue});
+            const double normalized_c_min = double(c_min) / 255.0;
+            const double normalized_c_max = double(c_max) / 255.0;
+
+            const auto delta = c_max - c_min;
+            const double normalized_delta = normalized_c_max - normalized_c_min;
+
+            const gold::uint16_t hue = [&] -> gold::uint16_t {
+                if (delta == 0)
+                    return 0;
+                else if (c_max == red)
+                    return gold::uint16_t(60 * (__builtin_fmod((normalized_green - normalized_blue) / normalized_delta, 6)));
+                else if (c_max == green)
+                    return gold::uint16_t(60 * (((normalized_blue - normalized_red) / normalized_delta) + 2));
+                else if (c_max == blue)
+                    return gold::uint16_t(60 * (((normalized_red - normalized_green) / normalized_delta) + 4));
+            }();
+            const gold::uint8_t saturation = [&] -> gold::uint8_t {
+                if (delta == 0)
+                    return 0;
+                else
+                    return gold::uint8_t(100 * (normalized_delta / (1 - __builtin_fabs(normalized_c_max + normalized_c_min - 1))));
+            }();
+            const gold::uint8_t lightness = (c_max + c_min) / 2;
+
+            return color_hsl { hue, saturation, lightness };
+        }
+
+        /// to_cmyk
+        constexpr color_cmyk to_cmyk() const noexcept {
+            const auto [red, green, blue] = to_rgb();
+
+            const auto max_c = __algo::max_element({red, green, blue});
+
+            const double normalized_red = double(red) / 255.0;
+            const double normalized_green = double(green) / 255.0;
+            const double normalized_blue = double(blue) / 255.0;
+            const double normalized_max = double(max_c) / 255.0;
+
+            const double k = 1 - normalized_max;
+            const double c = (1 - normalized_red - k) / (1 - k);
+            const double m = (1 - normalized_green - k) / (1 - k);
+            const double y = (1 - normalized_blue - k) / (1 - k);
+
+            return color_cmyk {
+                .cyan      = float(c),
+                .magenta   = float(m),
+                .yellow    = float(y),
+                .black_key = float(k)
+            };
+        }
+
+        /// operator==
+        constexpr bool operator==(const color&) const noexcept = default;
+
+        /// common colors
+        static const color black;
+        static const color white;
+        static const color red;
+        static const color lime;
+        static const color blue;
+        static const color yellow;
+        static const color magenta;
+        static const color cyan;
+        static const color silver;
+        static const color gray;
+        static const color maroon;
+        static const color olive;
+        static const color green;
+        static const color teal;
+        static const color navy;
+        static const color purple;
+        static const color brown;
+        static const color pink;
+        static const color transparent;
+    };
+
+    inline constexpr color color::black   = color::from_hex(color_hex(0x00'00'00u));
+    inline constexpr color color::white   = color::from_hex(color_hex(0xff'ff'ffu));
+    inline constexpr color color::red     = color::from_hex(color_hex(0xff'00'00u));
+    inline constexpr color color::lime    = color::from_hex(color_hex(0x00'ff'00u));
+    inline constexpr color color::blue    = color::from_hex(color_hex(0x00'00'ffu));
+    inline constexpr color color::yellow  = color::from_hex(color_hex(0xff'ff'00u));
+    inline constexpr color color::magenta = color::from_hex(color_hex(0xff'00'ffu));
+    inline constexpr color color::cyan    = color::from_hex(color_hex(0x00'ff'ffu));
+    inline constexpr color color::silver  = color::from_hex(color_hex(0xbf'bf'bfu));
+    inline constexpr color color::gray    = color::from_hex(color_hex(0x80'80'80u));
+    inline constexpr color color::maroon  = color::from_hex(color_hex(0x80'00'00u));
+    inline constexpr color color::olive   = color::from_hex(color_hex(0x80'80'00u));
+    inline constexpr color color::green   = color::from_hex(color_hex(0x00'80'00u));
+    inline constexpr color color::teal    = color::from_hex(color_hex(0x00'80'80u));
+    inline constexpr color color::navy    = color::from_hex(color_hex(0x00'00'80u));
+    inline constexpr color color::purple  = color::from_hex(color_hex(0x80'00'80u));
+    inline constexpr color color::brown   = color::from_hex(color_hex(0x8a'53'19u));
+    inline constexpr color color::pink    = color::from_hex(color_hex(0xff'c0'cbu));
+    inline constexpr color color::transparent = color::from_hex(color_hex_with_alpha(0));
+
+    /// canvas images
+    namespace __canvas {
+
+        /// __canvas::lower_case_view
+        struct lower_case_view {
+            std::string_view base;
+
+            struct iterator {
+                using iterator_concept = std::input_iterator_tag;
+                using value_type = char;
+                using difference_type = std::size_t;
+
+                std::string_view::iterator iter;
+
+                constexpr char operator*() const noexcept {
+                    return __builtin_tolower(*iter);
+                }
+
+                constexpr iterator& operator++() noexcept {
+                    ++iter;
+                    return *this;
+                }
+
+                constexpr iterator operator++(int) noexcept {
+                    auto self = *this;
+                    ++*this;
+                    return self;
+                }
+
+                constexpr bool operator==(const iterator& other) const noexcept = default;
+
+                constexpr bool operator==(std::string_view::iterator other) const noexcept {
+                    return iter == other;
+                }
+
+            };
+
+            constexpr auto begin() const noexcept {
+                return iterator { base.begin() };
+            }
+
+            constexpr auto end() const noexcept {
+                return iterator { base.end() };
+            }
+
+            constexpr std::size_t size() const noexcept {
+                return base.size();
+            }
+
+            constexpr bool operator==(std::string_view other) const noexcept {
+                if (base.size() != other.size())
+                    return false;
+                auto iter1 = begin();
+                auto sent1 = end();
+                auto iter2 = other.begin();
+                auto sent2 = other.end();
+                for (; iter1 != sent1 && sent1 != sent2; ++iter1, ++iter2) {
+                    if (*iter1 != *iter2)
+                        return false;
+                }
+                return true;
+            }
+        };
+
+    } // namespace __canvas
+
+    class image_view;
+
+    /// image buffer
+    using canvas_view = std::mdspan<canvas::color, std::dims<2>>;
+    using const_canvas_view = std::mdspan<const canvas::color, std::dims<2>>;
+
+    /// canvas::image
+    class image {
+      private:
+        std::vector<std::byte> m_pixels_;
+        std::size_t m_width_;
+        std::size_t m_height_;
+
+        friend class image_view;
+
+        constexpr auto mf_as_mdview_bytes_() noexcept {
+            using Extents = std::extents<std::size_t, std::dynamic_extent, std::dynamic_extent, 4>;
+            return std::mdspan<std::byte, Extents>(m_pixels_.data(), m_height_, m_width_);
+        }
+
+        constexpr auto mf_as_mdview_bytes_() const noexcept {
+            using Extents = std::extents<std::size_t, std::dynamic_extent, std::dynamic_extent, 4>;
+            return std::mdspan<const std::byte, Extents>(m_pixels_.data(), m_height_, m_width_);
+        }
+
+        auto mf_as_mdview_colors_() noexcept {
+            using Extents = std::extents<std::size_t, std::dynamic_extent, std::dynamic_extent>;
+            return std::mdspan<canvas::color, Extents>(
+                reinterpret_cast<canvas::color*>(m_pixels_.data()), m_height_, m_width_
+            );
+        }
+
+        auto mf_as_mdview_colors_() const noexcept {
+            using Extents = std::extents<std::size_t, std::dynamic_extent, std::dynamic_extent>;
+            return std::mdspan<const canvas::color, Extents>(
+                reinterpret_cast<const canvas::color*>(m_pixels_.data()), m_height_, m_width_
+            );
+        }
+
+      public:
+        /// create
+        static constexpr image create (canvas::size dimension, canvas::color c) noexcept {
+            if (dimension.width && dimension.height) {
+                image result;
+                result.m_width_ = dimension.width;
+                result.m_height_ = dimension.height;
+
+                result.m_pixels_.resize(result.m_width_ * result.m_height_ * 4);
+
+                if consteval {
+                    std::byte* iter = result.m_pixels_.data();
+                    std::byte* sent = iter + result.m_pixels_.size();
+
+                    const auto red_channel   = std::byte{c.extract_red()};
+                    const auto green_channel = std::byte{c.extract_green()};
+                    const auto blue_channel  = std::byte{c.extract_blue()};
+                    const auto alpha_channel = std::byte{c.extract_alpha()};
+
+                    while (iter != sent) {
+                        *iter++ = red_channel;
+                        *iter++ = green_channel;
+                        *iter++ = blue_channel;
+                        *iter++ = alpha_channel;
+                    }
+                } else {
+                    canvas::color* iter = reinterpret_cast<canvas::color*>(result.m_pixels_.data());
+                    canvas::color* sent = iter + result.m_pixels_.size() / 4;
+
+                    while (iter != sent)
+                        *iter++ = c;
+                }
+
+                return result;
+            }
+            return {};
+        }
+
+        /// try_load_from_file
+        static gold::expected<image, std::string_view> try_load_from_file (std::string_view filename) noexcept {
+
+            // pre: filename.end() == '\0'
+
+            image result;
+
+            int width = 0;
+            int height = 0;
+            int channels = 0;
+
+            unsigned char* ptr = ::stbi_load(filename.data(), &width, &height, &channels, STBI_rgb_alpha);
+
+            if (ptr) {
+                result.m_width_ = static_cast<std::size_t>(width);
+                result.m_height_ = static_cast<std::size_t>(height);
+
+                if (result.m_width_ > 0 && result.m_height_ > 0) {
+                    result.m_pixels_.resize(static_cast<std::size_t>(width * height * 4));
+                    __builtin_memcpy(result.m_pixels_.data(), ptr, result.m_pixels_.size());
+                }
+
+                ::stbi_image_free(ptr);
+
+            } else {
+                // TODO:
+                return gold::unexpected<std::string_view>(::stbi_failure_reason());
+            }
+
+            return std::move(result);
+        }
+
+        /// try_load_from_memory
+        static gold::expected<image, std::string_view> try_load_from_memory (std::span <const std::byte> buffer) noexcept {
+
+            if (buffer.empty())
+                return gold::unexpected<std::string_view>("error: loading from empty buffer");
+
+            image result;
+
+            int width = 0;
+            int height = 0;
+            int channels = 0;
+
+            const unsigned char* transmuted_buffer = reinterpret_cast<const unsigned char*>(buffer.data());
+
+            unsigned char* ptr = ::stbi_load_from_memory(transmuted_buffer, buffer.size_bytes(), &width, &height, &channels, STBI_rgb_alpha);
+
+            if (ptr) {
+                result.m_width_ = static_cast<std::size_t>(width);
+                result.m_height_ = static_cast<std::size_t>(height);
+
+                if (result.m_width_ > 0 && result.m_height_ > 0) {
+                    result.m_pixels_.resize(static_cast<std::size_t>(width * height * 4));
+                    __builtin_memcpy(result.m_pixels_.data(), ptr, result.m_pixels_.size());
+                }
+
+                ::stbi_image_free(ptr);
+
+            } else {
+                // TODO:
+                return gold::unexpected<std::string_view>(::stbi_failure_reason());
+            }
+
+            return std::move(result);
+        }
+
+        /// try_save_as
+        gold::expected<void, std::string_view> try_save_as(std::string_view filename) const noexcept {
+            if (!m_pixels_.empty() && m_width_ > 0 && m_height_ > 0) {
+
+                const std::size_t dot_at = filename.find_last_of('.');
+                const auto extension = __canvas::lower_case_view{dot_at != std::string_view::npos ? filename.substr(dot_at + 1) : ""};
+
+                const int c_width = static_cast<int>(m_width_);
+                const int c_height = static_cast<int>(m_height_);
+
+                if (extension == "bmp") {
+                    if (::stbi_write_bmp(filename.data(), c_width, c_height, 4, m_pixels_.data()))
+                        return {};
+                } else if (extension == "tga") {
+                    if (::stbi_write_tga(filename.data(), c_width, c_height, 4, m_pixels_.data()))
+                        return {};
+                } else if (extension == "png") {
+                    if (::stbi_write_png(filename.data(), c_width, c_height, 4, m_pixels_.data(), 0))
+                        return {};
+                } else if (extension == "jpg" || extension == "jpeg") {
+                    if (::stbi_write_jpg(filename.data(), c_width, c_height, 4, m_pixels_.data(), 90))
+                        return {};
+                }
+            }
+
+            return gold::unexpected<std::string_view>("error: unable to save image");
+        }
+
+        /// size
+        constexpr canvas::size size() const noexcept {
+            return canvas::size { m_width_, m_height_ };
+        }
+
+        /// as_canvas_view
+        canvas::canvas_view as_canvas_view() noexcept {
+            return mf_as_mdview_colors_();
+        }
+
+        /// as_canvas_view
+        canvas::const_canvas_view as_canvas_view() const noexcept {
+            return mf_as_mdview_colors_();
+        }
+
+        /// get_pixel
+        // represented by color
+        constexpr canvas::color get_pixel(canvas::position pos) const noexcept {
+            // TODO: replace with gold::mdspan operations + SIMD
+            const std::byte* pixel_ptr = &m_pixels_[(pos.x + pos.y * m_width_) * 4];
+            if consteval {
+                return canvas::color::from_rgba({
+                    std::to_integer<gold::uint8_t>(pixel_ptr[0]),
+                    std::to_integer<gold::uint8_t>(pixel_ptr[1]),
+                    std::to_integer<gold::uint8_t>(pixel_ptr[2]),
+                    std::to_integer<gold::uint8_t>(pixel_ptr[3])
+                });
+            } else {
+                return *reinterpret_cast<const canvas::color*>(pixel_ptr);
+            }
+        }
+
+        /// set_pixel
+        constexpr void set_pixel(canvas::position pos, canvas::color new_color) noexcept {
+            // TODO: replace with gold::mdspan operations + SIMD
+            if (m_pixels_.empty())
+                return;
+            if consteval {
+                std::byte* pixel_ptr = &m_pixels_[(pos.x + pos.y * m_width_) * 4];
+                pixel_ptr[0] = std::byte { new_color.extract_red() };
+                pixel_ptr[1] = std::byte { new_color.extract_green() };
+                pixel_ptr[2] = std::byte { new_color.extract_blue() };
+                pixel_ptr[3] = std::byte { new_color.extract_alpha() };
+            } else {
+                canvas::color* pixel_ptr = reinterpret_cast<canvas::color*>(&m_pixels_[(pos.x + pos.y * m_width_) * 4]);
+                *pixel_ptr = new_color;
+            }
+        }
+
+        //// Image Operations
+        /// create_mask_from_color
+        image& create_mask_from_color(canvas::color test_color, gold::uint8_t alpha_value) noexcept {
+            if (m_pixels_.empty())
+                return *this;
+
+            // TODO: optimize to process faster
+            auto pixels_view = mf_as_mdview_colors_();
+            for (auto indices : __mdspan::index_cartesian_product(pixels_view.extents())) {
+                canvas::color& old_color = pixels_view[indices];
+                if (old_color.to_rgb() == test_color.to_rgb())
+                    old_color.set_alpha(alpha_value);
+            }
+
+            return *this;
+        }
+
+        /// replace_color
+        image& replace_color(canvas::color old_color, canvas::color new_color) noexcept {
+            if (m_pixels_.empty());
+
+            // TODO: optimize to process faster
+            auto pixels_view = mf_as_mdview_colors_();
+            for (auto indices : __mdspan::index_cartesian_product(pixels_view.extents())) {
+                canvas::color& test_color = pixels_view[indices];
+                if (old_color == test_color)
+                    test_color = new_color;
+            }
+
+            return *this;
+        }
+
+        /// to_grayscale
+        // TODO: add constexpr
+        image& to_grayscale() noexcept {
+            if (m_pixels_.empty())
+                return *this;
+
+            // TODO: optimize to process faster
+            auto pixels_view = mf_as_mdview_colors_();
+            for (auto indices : __mdspan::index_cartesian_product(pixels_view.extents())) {
+                canvas::color& old_color = pixels_view[indices];
+                gold::uint8_t grayscale = (old_color.extract_red() + old_color.extract_green() + old_color.extract_blue()) / 3;
+                old_color = canvas::color::from_rgba({
+                    grayscale, grayscale, grayscale, old_color.extract_alpha()
+                });
+            }
+
+            return *this;
+        }
+
+        /// horizontal_flip
+        image& horizontal_flip() noexcept {
+            if (m_pixels_.empty())
+                return *this;
+
+            // TODO: optimize to process faster
+            // as of now: it takes ~25s to process [very slow]
+            // + update: using parallel for -> reduces by 9 seconds
+            auto pixels_view = mf_as_mdview_colors_();
+            #pragma omp parallel for
+            for (std::size_t i = 0; i < m_height_; ++i)
+                for (std::size_t j = 0; j < m_width_ / 2; ++j)
+                    std::ranges::swap(pixels_view[i, j], pixels_view[i, m_width_ - j - 1]);
+
+            return *this;
+        }
+
+        /// vertical_flip
+        image& vertical_flip() noexcept {
+            if (m_pixels_.empty())
+                return *this;
+
+            // TODO: optimize to process faster
+            auto pixels_view = mf_as_mdview_colors_();
+            #pragma omp parallel for
+            for (std::size_t i = 0; i < m_height_ / 2; ++i)
+                for (std::size_t j = 0; j < m_width_; ++j)
+                    std::ranges::swap(pixels_view[i, j], pixels_view[m_height_ - i - 1, j]);
+
+            return *this;
+        }
+
+        /// rotate_left
+        image& rotate_left() noexcept;
+
+        /// rotate_right
+        image& rotate_right() noexcept;
+
+        /// crop
+        image& crop(canvas::region) noexcept;
+    };
+
+    /// canvas::image_view
+    // non-owning reference to canvas::image or collection of bytes
+    // TODO: add const and non-const version
+    class image_view {
+      private:
+        std::span<std::byte> m_pixels_;
+        std::size_t m_width_;
+        std::size_t m_height_;
+
+        constexpr auto mf_as_mdview_bytes_() const noexcept {
+            using Extents = std::extents<std::size_t, std::dynamic_extent, std::dynamic_extent, 4>;
+            return std::mdspan<std::byte, Extents>(m_pixels_.data(), m_height_, m_width_);
+        }
+
+        auto mf_as_mdview_colors_() const noexcept {
+            return canvas::canvas_view(
+                reinterpret_cast<canvas::color*>(m_pixels_.data()), m_height_, m_width_
+            );
+        }
+
+      public:
+        constexpr image_view() noexcept = default;
+        constexpr image_view(const image_view&) = default;
+        constexpr image_view& operator=(const image_view&) = default;
+
+        constexpr image_view(image& m) noexcept
+        : m_pixels_(m.m_pixels_), m_width_(m.m_width_), m_height_(m.m_height_) {}
+
+        /// from_bytes
+        static constexpr image_view from_bytes(std::span<std::byte> bytes, std::size_t width, std::size_t height) {
+            image_view result;
+            result.m_pixels_ = bytes;
+            result.m_width_ = width;
+            result.m_height_ = height;
+            return result;
+        }
+
+        /// size
+        constexpr canvas::size size() const noexcept {
+            return canvas::size { m_width_, m_height_ };
+        }
+
+        /// as_canvas_view
+        canvas::canvas_view as_canvas_view() const noexcept {
+            return mf_as_mdview_colors_();
+        }
+    };
+
+    /// TODO: basic_surface
+    // replacing canvas_view
+
+} // namespace gold::inline preview::canvas
+
+#endif // __GOLD_PREVIEW_CANVAS

@@ -1,0 +1,11 @@
+// <gold/numeric> - gold++ library
+
+// Copyright (C) [ 2024 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_NUMERIC
+#define __GOLD_NUMERIC
+
+#include <gold/bits/numeric/sat_ops.hpp>
+
+#endif // __GOLD_NUMERIC

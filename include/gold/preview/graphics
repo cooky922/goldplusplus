@@ -1,0 +1,506 @@
+// <gold/preview/graphics> - gold++ library
+
+// Copyright (C) 2021 - present Desmond Gold
+
+// note: this is only a prototype
+// note: the header is OS-specific and usable only in "demo"
+// note: this header only concerns on 2D
+
+#pragma once
+#ifndef __GOLD_PREVIEW_GRAPHICS
+#define __GOLD_PREVIEW_GRAPHICS
+
+#ifndef _WIN32
+#   error "Requires Windows OS Support"
+#endif // _WIN32
+
+#include <windows.h>
+#include <GL/gl.h>
+#include <GL/glu.h>
+#include <GL/glut.h>
+
+#include <string_view>
+#include <array>
+
+#include <gold/preview/bits/command_line.hpp>
+
+namespace gold::preview {
+
+    namespace graphics {
+
+        /// coord_t
+        template <typename T = int>
+        struct coord_t {
+            /// value_type
+            using value_type = T;
+
+            /// data members
+            value_type x, y;
+
+            /// copy constructor
+            constexpr coord_t& operator=(const coord_t& other) noexcept {
+                x = std::move(other.x);
+                y = std::move(other.y);
+                return *this;
+            }
+
+            /// operator==
+            constexpr bool operator==(const coord_t&) const = default;
+
+            /// operator<=>
+            constexpr auto operator<=>(const coord_t&) const = default;
+
+            /// is_in_range
+            constexpr bool is_in_range(const coord_t& a, const coord_t& b) const noexcept {
+                return x >= a.x && x <= b.x && y >= a.y && y <= b.y;
+            }
+        };
+
+        /// dimension_t
+        template <typename T = int>
+        struct dimension_t {
+            /// value_type
+            using value_type = T;
+
+            /// data members
+            value_type width, height;
+
+            /// operator==
+            constexpr bool operator==(const dimension_t&) const = default;
+
+            /// operator<=>
+            constexpr auto operator<=>(const dimension_t&) const = default;
+        };
+
+        /// rectangle_t
+        template <typename T = int>
+        struct rectangle_t {
+            /// value_type
+            using value_type = T;
+
+            /// data members
+            value_type left, right, bottom, top;
+
+            /// operator==
+            constexpr bool operator==(const rectangle_t&) const = default;
+
+            /// operator<=>
+            constexpr auto operator<=>(const rectangle_t&) const = default;
+        };
+
+        /// color_info_t
+        class color_info_t {
+          public:
+            struct rgb_color_t { std::uint8_t red, green, blue; };
+            struct hsl_color_t { float hue, saturation, lightness; };
+
+          private:
+            std::uint8_t m_red_, m_green_, m_blue_;
+
+            static constexpr rgb_color_t hex_to_rgb_(const std::uint32_t& hex) {
+                return {
+                    .red   = std::uint8_t((hex >> 16) & 0xff),
+                    .green = std::uint8_t((hex >> 8)  & 0xff),
+                    .blue  = std::uint8_t(hex & 0xff)
+                };
+            }
+
+          public:
+
+            /// constructor - taking RGB in 3 arguments
+            constexpr color_info_t(const std::uint8_t& r, const std::uint8_t& g, const std::uint8_t& b)
+            : m_red_(r), m_green_(g), m_blue_(b) {}
+
+            /// constructor - taking RGB in range 0.0 - 1.0
+            template <std::floating_point T>
+            constexpr color_info_t(const T& r, const T& g, const T& b)
+            : color_info_t(
+                static_cast<std::uint8_t>(r * 255),
+                static_cast<std::uint8_t>(g * 255),
+                static_cast<std::uint8_t>(b * 255)
+            ) {}
+
+            /// constructor - taking RGB
+            constexpr color_info_t(const rgb_color_t& rgb)
+            : color_info_t(rgb.red, rgb.green, rgb.blue) {}
+
+            /// constructor - taking HEX value
+            constexpr color_info_t(const std::uint32_t& hex)
+            : color_info_t(hex_to_rgb_(hex)) {}
+
+            /// red
+            constexpr auto& red() const noexcept { return m_red_; }
+
+            /// green
+            constexpr auto& green() const noexcept { return m_green_; }
+
+            /// blue
+            constexpr auto& blue() const noexcept { return m_blue_; }
+
+            /// data
+            constexpr auto data() const noexcept {
+                return std::array{m_red_, m_green_, m_blue_}.data();
+            }
+
+            /// struct_data
+            constexpr rgb_color_t struct_data() const noexcept {
+                return { .red = m_red_, .green = m_green_, .blue = m_blue_ };
+            }
+
+            /// apply_to [ only for 0 - 255 values ]
+            template <typename F>
+            constexpr void apply_to(F&& f) const noexcept {
+                std::forward<F>(f)(m_red_,m_green_, m_blue_);
+            }
+
+            /// to_open_unit, name source: https://math.stackexchange.com/questions/231518/name-for-the-real-numbers-between-0-and-1
+            constexpr std::array<float, 3> to_open_unit() const noexcept {
+                return { m_red_ / 255.0f, m_green_ / 255.0f, m_blue_ / 255.0f };
+            }
+
+            //// static methods conversion
+            /// from_hex
+            static constexpr auto from_hex(const std::uint32_t& hex) noexcept {
+                return hex_to_rgb_(hex);
+            }
+
+            /// to_hex
+            static constexpr std::uint32_t to_hex(const color_info_t& color) noexcept {
+                return ((color.m_red_ & 0xff) << 16) + ((color.m_green_ & 0xff) << 8) + (color.m_blue_ & 0xff);
+            }
+
+            constexpr auto to_hex() const noexcept {
+                return to_hex(*this);
+            }
+
+            /// from_hsl [[ incomplete ]]
+            /// to_hsl [[ incomplete ]]
+
+            //// transformations
+                        /// to_gray_scale
+            constexpr color_info_t& to_gray_scale() noexcept {
+                const std::uint8_t& new_color_ = (m_red_ + m_green_ + m_blue_) / 3;
+                m_red_   = new_color_;
+                m_green_ = new_color_;
+                m_blue_  = new_color_;
+                return *this;
+            }
+
+            /// to_invert
+            constexpr color_info_t& to_invert() noexcept {
+                const auto& new_color_ = hex_to_rgb_(0xffffff - to_hex());
+                m_red_  = new_color_.red;
+                m_green_ = new_color_.green;
+                m_blue_ = new_color_.blue;
+                return *this;
+            }
+        };
+
+        /// window_construct_t
+        struct window_construct_t {
+            std::string_view title { "Graphics Program" };
+            dimension_t<> size { .width = 600, .height = 600 };
+            coord_t<> position { .x = 0, .y = 0 };
+            rectangle_t<> coord_limit { .left = 0, .right = size.width, .bottom = 0, .top = size.height };
+            int display_mode { GLUT_RGBA | GLUT_DEPTH | GLUT_DOUBLE };
+        };
+
+        /// window
+        class window_t {
+          private:
+            struct _partial_construct_t {
+                gold::preview::command_line args;
+                window_construct_t others;
+            };
+
+            struct _full_construct_t {
+                gold::preview::command_line args;
+                std::string_view title { "Graphics Program" };
+                dimension_t<> size { .width = 600, .height = 600 };
+                coord_t<> position { .x = 0, .y = 0 };
+                rectangle_t<> coord_limit { .left = 0, .right = size.width, .bottom = 0, .top = size.height };
+                int display_mode { GLUT_RGBA | GLUT_DEPTH | GLUT_DOUBLE };
+            };
+
+            _full_construct_t m_data_;
+
+          public:
+
+            /// constructors
+            window_t(const _full_construct_t& arg) noexcept
+            : m_data_(arg) {
+                glutInit(m_data_.args.m_arg_count_, m_data_.args.m_args_);
+                glutInitDisplayMode(m_data_.display_mode);
+                glutInitWindowSize(m_data_.size.width, m_data_.size.height);
+                glutInitWindowPosition(m_data_.position.x, m_data_.position.y);
+                glutCreateWindow(m_data_.title.data());
+            }
+
+            window_t(const _partial_construct_t& arg) noexcept
+            : window_t({
+                .args = arg.args,
+                .title = arg.others.title,
+                .size = arg.others.size,
+                .position = arg.others.position,
+                .coord_limit = arg.others.coord_limit,
+                .display_mode = arg.others.display_mode
+            }) {}
+
+            /// destructor
+            ~window_t() {
+                glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+                glutMainLoop();
+            }
+
+            /// set_background_color
+            /// set_display
+            template <typename F>
+            window_t& set_display(F f) {
+                glutDisplayFunc(f);
+                return *this;
+            }
+
+            /// set_reshape
+            template <typename F>
+            window_t& set_reshape(F f) {
+                glutReshapeFunc(f);
+                return *this;
+            }
+
+            /// set_idle
+            template <typename F>
+            window_t& set_idle(F f) {
+                glutIdleFunc(f);
+                return *this;
+            }
+
+            /// set_mouse_control
+            template <typename F>
+            window_t& set_mouse_control(F f) {
+                glutMouseFunc(f);
+                return *this;
+            }
+
+            /// set_motion_control
+            template <typename F>
+            window_t& set_motion_control(F f) {
+                glutMotionFunc(f);
+                return *this;
+            }
+
+            /// set_passive_motion_control
+            template <typename F>
+            window_t& set_passive_motion_control(F f) {
+                glutPassiveMotionFunc(f);
+                return *this;
+            }
+
+            /// set_key_control
+            template <typename F>
+            window_t& set_key_control(F f) {
+                glutKeyboardFunc(f);
+                return *this;
+            }
+
+            /// set_special_key_control
+            template <typename F>
+            window_t& set_special_key_control(F f) {
+                glutSpecialFunc(f);
+                return *this;
+            }
+
+
+        };
+
+        namespace canvas {
+
+            /// set_color_fn
+            struct set_color_fn {
+
+                template <typename T>
+                void operator()(const T& r, const T& g, const T& b) const noexcept {
+                    if constexpr (std::is_same_v<T, std::uint8_t>)
+                        glColor3ub(r, g, b);
+                    else if constexpr (std::is_same_v<T, std::int16_t>)
+                        glColor3s(r, g, b);
+                    else if constexpr (std::is_same_v<T, std::uint16_t>)
+                        glColor3us(r, g, b);
+                    else if constexpr (std::is_same_v<T, std::int32_t>)
+                        glColor3i(r, g, b);
+                    else if constexpr (std::is_same_v<T, std::uint32_t>)
+                        glColor3ui(r, g, b);
+                    else if constexpr (std::is_floating_point_v<T>)
+                        glColor3f(
+                            static_cast<float>(r),
+                            static_cast<float>(g),
+                            static_cast<float>(b)
+                        );
+                }
+
+                void operator()(const std::uint32_t& hex) const noexcept {
+                    const auto& color_ = color_info_t(hex);
+                    glColor3ub(color_.red(), color_.green(), color_.blue());
+                }
+
+                void operator()(const color_info_t& color) const noexcept {
+                    glColor3ub(color.red(), color.green(), color.blue());
+                }
+            };
+
+            inline constexpr set_color_fn set_color {};
+
+            /// set_line_width
+            inline constexpr auto set_line_width = []<typename T>(const T& width) {
+                glLineWidth(float(width));
+            };
+
+            /// set_line_stipple
+            inline constexpr auto set_line_stipple = [](const std::int32_t& factor, const std::uint16_t& pattern) {
+                glLineStipple(factor, pattern);
+            };
+
+            /// set_point_size
+            inline constexpr auto set_point_size = []<typename T>(const T& size) {
+                glPointSize(float(size));
+            };
+
+            /// set_vertex_fn
+            struct set_vertex_fn {
+
+                template <typename T>
+                void operator()(const T& x, const T& y) const noexcept {
+                    if constexpr (std::is_same_v<T, double>) {
+                        glVertex2d(x, y);
+                    } else if constexpr (std::is_same_v<T, float>) {
+                        glVertex2f(x, y);
+                    } else if constexpr (std::is_same_v<T, int>) {
+                        glVertex2i(x, y);
+                    } else if constexpr (std::is_same_v<T, float>) {
+                        glVertex2s(x, y);
+                    }
+                }
+
+                template <typename T>
+                void operator()(const coord_t<T>& c) const noexcept {
+                    (*this)(c.x, c.y);
+                }
+
+            };
+
+            /// set_vertex
+            inline constexpr set_vertex_fn set_vertex {};
+
+            /// draw_guard
+            struct draw_guard {
+                draw_guard(const std::uint32_t& mode) {
+                    glBegin(mode);
+                }
+                ~draw_guard() {
+                    glEnd();
+                }
+            };
+
+            /// make_draw_guard
+            inline constexpr auto make_draw_guard = []<typename F>(const std::uint32_t& mode, F&& func) {
+                draw_guard guard(mode);
+                std::forward<F>(func)();
+            };
+
+            //// Shapes
+            /// draw_style
+            enum class draw_style { stroked, filled };
+
+            /// rectangle_fn
+            struct rectangle_fn {
+
+                template <typename T>
+                void operator()(const T& left,
+                                const T& bottom,
+                                const T& right,
+                                const T& top,
+                                draw_style style = draw_style::filled)
+                const noexcept {
+                    make_draw_guard((style == draw_style::stroked ? GL_LINE_LOOP : GL_POLYGON), [&]{
+                        set_vertex(left, bottom);
+                        set_vertex(right, bottom);
+                        set_vertex(right, top);
+                        set_vertex(right, top);
+                        set_vertex(left, top);
+                    });
+                }
+
+                template <typename T>
+                void operator()(const coord_t<T>& a,
+                                const coord_t<T>& b,
+                                draw_style style = draw_style::filled)
+                const noexcept {
+                    (*this)(a.x, a.y, b.x, b.y, style);
+                }
+
+                template <typename T>
+                void operator()(const rectangle_t<T>& rect, draw_style style = draw_style::filled) const noexcept {
+                    (*this)(rect.left, rect.bottom, rect.right, rect.top, style);
+                }
+
+            };
+
+            /// rectangle
+            inline constexpr rectangle_fn rectangle {};
+
+            /// point
+
+            /// line
+
+
+        } // namespace canvas
+
+        /// default_buffer_guard
+        struct default_buffer_guard {
+
+            default_buffer_guard(std::uint32_t flag = GL_COLOR_BUFFER_BIT) {
+                glClear(flag);
+                glLoadIdentity();
+            }
+            ~default_buffer_guard() {
+                glutSwapBuffers();
+            }
+        };
+
+        /// make_semi_scale
+        const auto make_semi_scale = []<typename T>(const rectangle_t<T>& rect, const dimension_t<int>& dim) {
+            glViewport(0, 0, dim.width, dim.height);
+            glMatrixMode(GL_PROJECTION);
+            glLoadIdentity();
+            const double& aspect = double(dim.width) / double(dim.height);
+            glOrtho(aspect * rect.left, aspect * rect.right, rect.bottom, rect.top, -1.0f, 1.0f);
+            glMatrixMode(GL_MODELVIEW);
+        };
+
+        /// make_nonresizable
+        const auto make_nonresizable = [](const window_construct_t& win) {
+            glutReshapeWindow(int(win.size.width), int(win.size.height));
+        };
+
+    } // namespace graphics
+
+} // namespace gold::preview
+
+namespace std {
+
+    template <>
+    struct tuple_size<gold::preview::graphics::color_info_t>
+    : std::integral_constant<std::size_t, 3> {};
+
+    template <std::size_t I>
+    constexpr const std::uint8_t& get(const gold::preview::graphics::color_info_t& info) {
+        switch (I) {
+            case 0: return info.red();
+            case 1: return info.green();
+            case 2: return info.blue();
+        }
+    }
+
+} // namespace std
+
+#endif // __GOLD_PREVIEW_GRAPHICS
+

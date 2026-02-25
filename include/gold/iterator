@@ -1,0 +1,14 @@
+// <gold/iterator> - gold++ library
+
+// Copyright (C) [ 2021 - 2025 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_ITERATOR
+#define __GOLD_ITERATOR
+
+#include <iterator>
+#include <gold/bits/iterator/iter_primitives.hpp>
+#include <gold/bits/iterator/null_sentinel.hpp>
+#include <gold/bits/iterator/iterator_interface.hpp>
+
+#endif // __GOLD_ITERATOR

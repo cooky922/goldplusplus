@@ -1,0 +1,12 @@
+// <gold/mdspan> - gold++ library
+
+// Copyright (C) [ 2021 - 2025 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_MDSPAN
+#define __GOLD_MDSPAN
+
+#include <mdspan>
+#include <gold/bits/mdspan/equal_mdspan.hpp>
+
+#endif // __GOLD_MDSPAN

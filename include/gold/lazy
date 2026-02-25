@@ -1,0 +1,11 @@
+// <gold/lazy> - gold++ library
+
+// Copyright (C) [ 2021 - 2022 ] - present Desmond Gold
+
+#pragma once
+#ifndef __GOLD_LAZY
+#define __GOLD_LAZY
+
+#include <gold/bits/coroutine/lazy.hpp>
+
+#endif // __GOLD_LAZY
